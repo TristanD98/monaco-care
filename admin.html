@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Care — Console Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --red: #CE1126; --red-dark: #A50D1E; --red-light: rgba(206,17,38,.1);
+            --bg: #0F0F13; --surface: #1A1A24; --surface2: #22222E; --border: rgba(255,255,255,.08);
+            --text: #F1F5F9; --muted: rgba(255,255,255,.4);
+            --success: #10B981; --warning: #F59E0B; --danger: #EF4444; --blue: #3B82F6;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+        /* ── LAYOUT ─────────────────────────────────────────── */
+        .layout { display:flex; min-height:100vh; }
+        .sidebar {
+            width:240px; background:var(--surface); border-right:1px solid var(--border);
+            display:flex; flex-direction:column; padding:24px 0; flex-shrink:0;
+        }
+        .main { flex:1; overflow-y:auto; }
+
+        /* ── SIDEBAR ────────────────────────────────────────── */
+        .sidebar-brand {
+            display:flex; align-items:center; gap:10px;
+            padding:0 20px 24px; border-bottom:1px solid var(--border);
+        }
+        .sidebar-brand .logo {
+            width:36px; height:36px; background:linear-gradient(135deg,var(--red),#FF2040);
+            border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        }
+        .sidebar-brand .logo i { color:white; font-size:16px; }
+        .sidebar-brand h2 { font-size:14px; font-weight:700; }
+        .sidebar-brand p { font-size:10px; color:var(--muted); }
+
+        .nav { padding:16px 12px; flex:1; }
+        .nav-item {
+            display:flex; align-items:center; gap:10px; padding:10px 12px;
+            border-radius:10px; cursor:pointer; font-size:13px; font-weight:500;
+            color:var(--muted); transition:all .2s; border:none; background:none;
+            width:100%; text-align:left; margin-bottom:2px;
+        }
+        .nav-item i { width:16px; text-align:center; font-size:13px; }
+        .nav-item:hover { background:rgba(255,255,255,.05); color:white; }
+        .nav-item.active { background:var(--red-light); color:var(--red); }
+        .nav-item .badge {
+            margin-left:auto; background:var(--red); color:white; border-radius:20px;
+            font-size:10px; padding:2px 7px; font-weight:700;
+        }
+
+        .sidebar-footer {
+            padding:16px 20px; border-top:1px solid var(--border);
+            font-size:12px; color:var(--muted);
+        }
+        .sidebar-footer a { color:var(--muted); text-decoration:none; }
+        .sidebar-footer a:hover { color:white; }
+
+        /* ── MAIN HEADER ────────────────────────────────────── */
+        .page-header {
+            padding:24px 32px; border-bottom:1px solid var(--border);
+            display:flex; align-items:center; justify-content:space-between;
+            position:sticky; top:0; background:var(--bg); z-index:10;
+        }
+        .page-header h1 { font-size:20px; font-weight:700; }
+        .page-header p  { font-size:13px; color:var(--muted); margin-top:2px; }
+
+        /* ── CONTENT ────────────────────────────────────────── */
+        .content { padding:32px; }
+
+        /* Stat cards */
+        .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+        .stat-card {
+            background:var(--surface); border:1px solid var(--border); border-radius:16px;
+            padding:20px; display:flex; flex-direction:column; gap:8px;
+        }
+        .stat-card .icon {
+            width:36px; height:36px; border-radius:10px;
+            display:flex; align-items:center; justify-content:center; font-size:15px;
+        }
+        .stat-card .value { font-size:28px; font-weight:800; }
+        .stat-card .label { font-size:12px; color:var(--muted); font-weight:500; }
+
+        /* Section */
+        .section { background:var(--surface); border:1px solid var(--border); border-radius:16px; margin-bottom:24px; overflow:hidden; }
+        .section-header {
+            padding:18px 24px; border-bottom:1px solid var(--border);
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .section-header h3 { font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .section-body { padding:20px 24px; }
+
+        /* Table */
+        .data-table { width:100%; border-collapse:collapse; }
+        .data-table th {
+            text-align:left; font-size:11px; font-weight:600; text-transform:uppercase;
+            letter-spacing:.5px; color:var(--muted); padding:0 0 12px;
+        }
+        .data-table td { padding:12px 0; border-top:1px solid var(--border); font-size:13px; vertical-align:middle; }
+        .data-table tr:first-child td { border-top:none; }
+
+        /* Badges status */
+        .badge-status {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+        }
+        .badge-status::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.7; }
+        .badge-status.active   { background:rgba(16,185,129,.15); color:var(--success); }
+        .badge-status.inactive { background:rgba(239,68,68,.15);  color:var(--danger); }
+        .badge-status.pending  { background:rgba(245,158,11,.15); color:var(--warning); }
+        .badge-status.approved { background:rgba(59,130,246,.15); color:var(--blue); }
+
+        /* Buttons */
+        .btn {
+            padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600;
+            cursor:pointer; border:none; font-family:'Inter',sans-serif; transition:all .2s;
+            display:inline-flex; align-items:center; gap:6px;
+        }
+        .btn-primary  { background:var(--red); color:white; }
+        .btn-primary:hover  { background:var(--red-dark); }
+        .btn-ghost { background:rgba(255,255,255,.07); color:var(--text); border:1px solid var(--border); }
+        .btn-ghost:hover { background:rgba(255,255,255,.12); }
+        .btn-danger { background:rgba(239,68,68,.15); color:var(--danger); }
+        .btn-danger:hover { background:rgba(239,68,68,.25); }
+        .btn-success { background:rgba(16,185,129,.15); color:var(--success); }
+        .btn-success:hover { background:rgba(16,185,129,.25); }
+
+        /* Generate code form */
+        .gen-form {
+            display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;
+        }
+        .gen-form .field { display:flex; flex-direction:column; gap:6px; }
+        .gen-form label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+        .gen-form input, .gen-form select {
+            padding:9px 12px; background:rgba(255,255,255,.06); border:1px solid var(--border);
+            border-radius:8px; color:white; font-family:'Inter',sans-serif; font-size:13px; outline:none;
+            transition:border-color .2s;
+        }
+        .gen-form input:focus, .gen-form select:focus { border-color:var(--red); }
+        .gen-form input::placeholder { color:var(--muted); }
+
+        /* Code pill */
+        .code-pill {
+            display:inline-flex; align-items:center; gap:8px;
+            font-family:monospace; font-size:14px; font-weight:700; letter-spacing:2px;
+            background:rgba(255,255,255,.07); padding:6px 14px; border-radius:8px;
+            border:1px solid var(--border);
+        }
+        .code-pill .copy-btn {
+            cursor:pointer; color:var(--muted); font-size:11px; background:none; border:none;
+            color:var(--muted); transition:color .2s; font-family:'Inter',sans-serif; padding:0;
+        }
+        .code-pill .copy-btn:hover { color:white; }
+
+        /* Alert box */
+        .alert-box {
+            padding:14px 18px; border-radius:12px; font-size:13px; margin-bottom:16px;
+            display:flex; align-items:flex-start; gap:12px; line-height:1.5;
+        }
+        .alert-box.info { background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.25); color:#93C5FD; }
+        .alert-box.success { background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.25); color:#6EE7B7; }
+        .alert-box.warning { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25); color:#FCD34D; }
+        .alert-box i { margin-top:2px; flex-shrink:0; }
+
+        /* Modal overlay */
+        .modal-overlay {
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
+            backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center;
+        }
+        .modal-overlay.open { display:flex; }
+        .modal-box {
+            background:var(--surface2); border:1px solid var(--border); border-radius:20px;
+            padding:28px; max-width:420px; width:calc(100% - 40px);
+            box-shadow:0 20px 60px rgba(0,0,0,.5);
+        }
+        .modal-box h3 { font-size:16px; font-weight:700; margin-bottom:8px; }
+        .modal-box p  { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.6; }
+        .modal-box .modal-actions { display:flex; gap:10px; margin-top:20px; }
+        .modal-box .modal-result {
+            background:rgba(255,255,255,.05); border-radius:12px; padding:16px;
+            margin-bottom:16px; text-align:center;
+        }
+        .modal-box .modal-result .code-big {
+            font-family:monospace; font-size:26px; font-weight:800; letter-spacing:4px;
+            color:white; margin:8px 0;
+        }
+        .modal-box .modal-result p { color:var(--muted); font-size:12px; margin:0; }
+
+        /* Login screen */
+        #admin-login {
+            position:fixed; inset:0; background:var(--bg);
+            display:flex; align-items:center; justify-content:center; z-index:999;
+        }
+        .login-box {
+            background:var(--surface); border:1px solid var(--border); border-radius:20px;
+            padding:32px; width:360px; text-align:center;
+        }
+        .login-box .admin-icon {
+            width:60px; height:60px; background:linear-gradient(135deg,var(--red),#FF2040);
+            border-radius:16px; display:inline-flex; align-items:center; justify-content:center;
+            font-size:24px; margin-bottom:16px;
+        }
+        .login-box h2 { font-size:20px; font-weight:800; margin-bottom:6px; }
+        .login-box p  { font-size:13px; color:var(--muted); margin-bottom:24px; }
+        .login-box input {
+            width:100%; padding:13px 16px; background:rgba(255,255,255,.07);
+            border:1px solid var(--border); border-radius:10px; color:white;
+            font-family:'Inter',sans-serif; font-size:14px; outline:none; margin-bottom:12px;
+            transition:border-color .2s;
+        }
+        .login-box input:focus { border-color:var(--red); }
+        .login-box input::placeholder { color:var(--muted); }
+        .login-box .btn-login {
+            width:100%; padding:14px; background:linear-gradient(135deg,var(--red),#FF2040);
+            border:none; border-radius:12px; color:white; font-family:'Inter',sans-serif;
+            font-size:15px; font-weight:700; cursor:pointer; margin-top:4px;
+            transition:opacity .2s;
+        }
+        .login-box .btn-login:hover { opacity:.9; }
+        .login-box .error-msg { color:#FCA5A5; font-size:12px; margin-top:8px; display:none; }
+
+        /* Responsive */
+        @media(max-width:900px) {
+            .sidebar { width:60px; }
+            .sidebar-brand h2, .sidebar-brand p, .nav-item span, .sidebar-footer { display:none; }
+            .nav-item { justify-content:center; padding:12px; }
+            .nav-item .badge { display:none; }
+            .stats-grid { grid-template-columns:1fr 1fr; }
+        }
+        @media(max-width:600px) {
+            .stats-grid { grid-template-columns:1fr; }
+            .content { padding:16px; }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align:center; padding:40px 20px; color:var(--muted);
+        }
+        .empty-state i { font-size:32px; opacity:.3; margin-bottom:12px; display:block; }
+        .empty-state p { font-size:13px; }
+    </style>
+</head>
+<body>
+
+<!-- ADMIN LOGIN SCREEN -->
+<div id="admin-login">
+    <div class="login-box">
+        <div class="admin-icon"><i class="fa-solid fa-shield-halved" style="color:white;"></i></div>
+        <h2>Console Admin</h2>
+        <p>Accès réservé à l'administrateur Monaco Care</p>
+        <input type="email" id="admin-email" placeholder="E-mail administrateur" autocomplete="email">
+        <input type="password" id="admin-password" placeholder="Mot de passe" autocomplete="current-password">
+        <button class="btn-login" onclick="adminLogin()">Accéder à la console</button>
+        <p class="error-msg" id="admin-error">Identifiants incorrects.</p>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="layout" id="admin-app" style="display:none;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="logo"><i class="fa-solid fa-heart-pulse"></i></div>
+            <div><h2>Monaco Care</h2><p>Console Admin</p></div>
+        </div>
+        <nav class="nav">
+            <button class="nav-item active" onclick="showSection('dashboard')" id="nav-dashboard">
+                <i class="fa-solid fa-chart-pie"></i><span>Tableau de bord</span>
+            </button>
+            <button class="nav-item" onclick="showSection('codes')" id="nav-codes">
+                <i class="fa-solid fa-key"></i><span>Codes démo</span>
+            </button>
+            <button class="nav-item" onclick="showSection('pros')" id="nav-pros">
+                <i class="fa-solid fa-user-doctor"></i><span>Professionnels</span>
+            </button>
+            <button class="nav-item" onclick="showSection('pending')" id="nav-pending">
+                <i class="fa-solid fa-clock"></i><span>Demandes</span>
+                <span class="badge" id="pending-badge" style="display:none;">0</span>
+            </button>
+            <button class="nav-item" onclick="showSection('patients')" id="nav-patients">
+                <i class="fa-solid fa-hospital-user"></i><span>Patients</span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="login.html"><i class="fa-solid fa-arrow-left"></i> Retour app</a><br>
+            <span id="admin-user-label" style="margin-top:6px; display:block;"></span>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- DASHBOARD -->
+        <section id="section-dashboard">
+            <div class="page-header">
+                <div><h1>Tableau de bord</h1><p>Vue d'ensemble de Monaco Care</p></div>
+            </div>
+            <div class="content">
+                <div class="stats-grid" id="stats-grid"><!-- JS --></div>
+
+                <div class="alert-box info">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                        <strong>Mode démo actif.</strong> Toutes les données sont stockées localement dans votre navigateur.
+                        Pour une utilisation en production avec plusieurs appareils, configurez Firebase dans <code>firebase-config.js</code>.
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--red);"></i> Activité récente</h3>
+                    </div>
+                    <div class="section-body" id="activity-log">
+                        <div class="empty-state"><i class="fa-solid fa-wave-square"></i><p>Aucune activité enregistrée.</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CODES DÉMO -->
+        <section id="section-codes" style="display:none;">
+            <div class="page-header">
+                <div><h1>Codes démo</h1><p>Gérez les codes d'accès famille</p></div>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--warning);"></i> Générer un nouveau code</h3>
+                    </div>
+                    <div class="section-body">
+                        <div class="gen-form">
+                            <div class="field">
+                                <label>Label (description)</label>
+                                <input type="text" id="code-label" placeholder="Ex: Famille Dupont" style="width:200px;">
+                            </div>
+                            <div class="field">
+                                <label>Durée de validité</label>
+                                <select id="code-days">
+                                    <option value="7">7 jours</option>
+                                    <option value="14">14 jours</option>
+                                    <option value="30" selected>30 jours</option>
+                                    <option value="60">60 jours</option>
+                                    <option value="90">90 jours</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="generateCode()">
+                                <i class="fa-solid fa-plus"></i> Générer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-list" style="color:var(--blue);"></i> Codes actifs</h3>
+                        <button class="btn btn-ghost" onclick="renderCodes()"><i class="fa-solid fa-rotate"></i> Rafraîchir</button>
+                    </div>
+                    <div class="section-body" id="codes-table"><!-- JS --></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROFESSIONNELS -->
+        <section id="section-pros" style="display:none;">
+            <div class="page-header">
+                <div><h1>Professionnels</h1><p>Comptes actifs et gestion des accès</p></div>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-users" style="color:var(--success);"></i> Comptes professionnels</h3>
+                        <button class="btn btn-ghost" onclick="renderPros()"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="section-body" id="pros-table"><!-- JS --></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEMANDES EN ATTENTE -->
+        <section id="section-pending" style="display:none;">
+            <div class="page-header">
+                <div><h1>Demandes d'accès</h1><p>Inscriptions professionnelles en attente</p></div>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-hourglass-half" style="color:var(--warning);"></i> En attente de validation</h3>
+                        <button class="btn btn-ghost" onclick="renderPending()"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="section-body" id="pending-table"><!-- JS --></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PATIENTS -->
+        <section id="section-patients" style="display:none;">
+            <div class="page-header">
+                <div><h1>Patients</h1><p>Dossiers de soins et accès associés</p></div>
+            </div>
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fa-solid fa-bed-pulse" style="color:var(--red);"></i> Dossiers actifs</h3>
+                    </div>
+                    <div class="section-body" id="patients-table"><!-- JS --></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- MODAL: Nouveau code généré -->
+<div class="modal-overlay" id="modal-new-code">
+    <div class="modal-box">
+        <h3>✅ Code généré avec succès !</h3>
+        <p>Transmettez ce code à la famille. Il leur permettra d'accéder à la démo.</p>
+        <div class="modal-result">
+            <p style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">Code d'accès famille</p>
+            <div class="code-big" id="modal-code-display">----</div>
+            <p id="modal-code-expiry"></p>
+        </div>
+        <div style="text-align:center; margin-bottom:16px;">
+            <button class="btn btn-ghost" onclick="copyCode()"><i class="fa-solid fa-copy"></i> Copier le code</button>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="closeModal('modal-new-code')">Fermer</button>
+    </div>
+</div>
+
+<!-- MODAL: Professionnel approuvé -->
+<div class="modal-overlay" id="modal-approved-pro">
+    <div class="modal-box">
+        <h3>✅ Professionnel validé !</h3>
+        <p>Transmettez ces identifiants au professionnel de santé par e-mail ou téléphone.</p>
+        <div class="modal-result">
+            <p style="font-size:11px; text-transform:uppercase; letter-spacing:.5px;">Identifiant</p>
+            <div class="code-big" id="modal-pro-id">PRO-XXX</div>
+            <p style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; margin-top:12px;">Code d'accès</p>
+            <div class="code-big" id="modal-pro-pin">--------</div>
+            <p id="modal-pro-name" style="margin-top:8px;"></p>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="closeModal('modal-approved-pro')">Fermer</button>
+    </div>
+</div>
+
+<!-- MODAL: Reset PIN -->
+<div class="modal-overlay" id="modal-reset-pin">
+    <div class="modal-box">
+        <h3>🔑 Nouveau code généré</h3>
+        <p>Transmettez ce nouveau code d'accès au professionnel.</p>
+        <div class="modal-result">
+            <div class="code-big" id="modal-new-pin">--------</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="closeModal('modal-reset-pin')">Fermer</button>
+    </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script>
+    /* ── CONFIG ADMIN ──────────────────────────────────────── */
+    // Identifiants admin par défaut (à changer en production !)
+    const ADMIN_CREDENTIALS = [
+        { email: 'admin@monacocare.mc', password: 'Monaco2026!' }
+    ];
+
+    /* ── LOGIN ADMIN ─────────────────────────────────────── */
+    function adminLogin() {
+        const email = document.getElementById('admin-email').value.trim().toLowerCase();
+        const pass  = document.getElementById('admin-password').value;
+        const valid = ADMIN_CREDENTIALS.find(c => c.email === email && c.password === pass);
+        if (valid) {
+            sessionStorage.setItem('mc_admin', JSON.stringify({ email, loginAt: new Date().toISOString() }));
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('admin-app').style.display = 'flex';
+            document.getElementById('admin-user-label').textContent = email;
+            initApp();
+        } else {
+            document.getElementById('admin-error').style.display = 'block';
+        }
+    }
+
+    // Vérifier si déjà connecté
+    document.addEventListener('DOMContentLoaded', () => {
+        const session = sessionStorage.getItem('mc_admin');
+        if (session) {
+            document.getElementById('admin-login').style.display = 'none';
+            document.getElementById('admin-app').style.display = 'flex';
+            const s = JSON.parse(session);
+            document.getElementById('admin-user-label').textContent = s.email;
+            initApp();
+        }
+        document.getElementById('admin-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('admin-password').focus(); });
+        document.getElementById('admin-password').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+    });
+
+    /* ── INIT ─────────────────────────────────────────────── */
+    function initApp() {
+        renderStats();
+        renderCodes();
+        updatePendingBadge();
+    }
+
+    /* ── NAVIGATION ───────────────────────────────────────── */
+    const sections = ['dashboard','codes','pros','pending','patients'];
+    function showSection(name) {
+        sections.forEach(s => {
+            document.getElementById('section-'+s).style.display = s === name ? 'block' : 'none';
+            document.getElementById('nav-'+s).classList.toggle('active', s === name);
+        });
+        if (name === 'codes')    renderCodes();
+        if (name === 'pros')     renderPros();
+        if (name === 'pending')  renderPending();
+        if (name === 'patients') renderPatients();
+    }
+
+    /* ── STATS ────────────────────────────────────────────── */
+    function renderStats() {
+        const codes   = MonacoCare.admin.getAllCodes();
+        const pros    = MonacoCare.admin.getAllProfessionals();
+        const pending = MonacoCare.admin.getPendingRegistrations();
+        const activeCodes = Object.values(codes).filter(c => c.active).length;
+
+        const items = [
+            { icon:'fa-solid fa-key',          color:'rgba(245,158,11,.2)', iconColor:'#FCD34D', value: Object.keys(codes).length, label:'Codes démo au total' },
+            { icon:'fa-solid fa-check-circle',  color:'rgba(16,185,129,.2)', iconColor:'#6EE7B7', value: activeCodes, label:'Codes actifs' },
+            { icon:'fa-solid fa-user-doctor',   color:'rgba(206,17,38,.2)',  iconColor:'#FCA5A5', value: Object.keys(pros).length, label:'Professionnels actifs' },
+            { icon:'fa-solid fa-hourglass-half',color:'rgba(59,130,246,.2)', iconColor:'#93C5FD', value: Object.keys(pending).length, label:'Demandes en attente' },
+        ];
+
+        document.getElementById('stats-grid').innerHTML = items.map(item => `
+            <div class="stat-card">
+                <div class="icon" style="background:${item.color};"><i class="${item.icon}" style="color:${item.iconColor};"></i></div>
+                <div class="value">${item.value}</div>
+                <div class="label">${item.label}</div>
+            </div>
+        `).join('');
+    }
+
+    /* ── CODES ────────────────────────────────────────────── */
+    function generateCode() {
+        const label = document.getElementById('code-label').value.trim() || 'Code famille';
+        const days  = parseInt(document.getElementById('code-days').value);
+        const code  = MonacoCare.admin.generateDemoCode({ label, days });
+
+        const expiry = new Date(Date.now() + days * 864e5);
+        document.getElementById('modal-code-display').textContent = code;
+        document.getElementById('modal-code-expiry').textContent  = `Expire le ${expiry.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`;
+        document.getElementById('code-label').value = '';
+        openModal('modal-new-code');
+        renderStats();
+        renderCodes();
+    }
+
+    let _currentCode = '';
+    function copyCode() {
+        const code = document.getElementById('modal-code-display').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
+            setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copier le code', 2000);
+        });
+    }
+
+    function renderCodes() {
+        const codes = MonacoCare.admin.getAllCodes();
+        const entries = Object.entries(codes).sort((a,b) => new Date(b[1].createdAt||0) - new Date(a[1].createdAt||0));
+
+        if (!entries.length) {
+            document.getElementById('codes-table').innerHTML = `<div class="empty-state"><i class="fa-solid fa-key"></i><p>Aucun code généré.</p></div>`;
+            return;
+        }
+
+        document.getElementById('codes-table').innerHTML = `
+            <table class="data-table">
+                <thead><tr>
+                    <th>Code</th><th>Label</th><th>Statut</th><th>Expiration</th><th>Actions</th>
+                </tr></thead>
+                <tbody>${entries.map(([code, data]) => {
+                    const expired = data.expiresAt && new Date(data.expiresAt) < new Date();
+                    const status  = expired ? 'inactive' : (data.active ? 'active' : 'inactive');
+                    const label   = expired ? 'Expiré' : (data.active ? 'Actif' : 'Désactivé');
+                    const expDate = data.expiresAt ? new Date(data.expiresAt).toLocaleDateString('fr-FR') : '—';
+                    return `<tr>
+                        <td><span class="code-pill">${code}</span></td>
+                        <td style="color:var(--muted);">${data.label || '—'}</td>
+                        <td><span class="badge-status ${status}">${label}</span></td>
+                        <td style="font-size:12px; color:var(--muted);">${expDate}</td>
+                        <td style="display:flex; gap:8px; flex-wrap:wrap; padding-top:14px;">
+                            <button class="btn btn-ghost" onclick="toggleCode('${code}')" title="${data.active ? 'Désactiver' : 'Activer'}">
+                                <i class="fa-solid fa-${data.active ? 'toggle-on' : 'toggle-off'}"></i>
+                            </button>
+                            <button class="btn btn-ghost" onclick="copyCodeDirect('${code}')" title="Copier le code">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteCode('${code}')" title="Supprimer">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+    }
+
+    function toggleCode(code) {
+        MonacoCare.admin.toggleDemoCode(code);
+        renderCodes(); renderStats();
+    }
+
+    function deleteCode(code) {
+        if (confirm(`Supprimer définitivement le code "${code}" ?`)) {
+            MonacoCare.admin.deleteDemoCode(code);
+            renderCodes(); renderStats();
+        }
+    }
+
+    function copyCodeDirect(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i>', 1500);
+        });
+    }
+
+    /* ── PROS ─────────────────────────────────────────────── */
+    function renderPros() {
+        const pros = MonacoCare.admin.getAllProfessionals();
+        const entries = Object.entries(pros).sort((a,b) => new Date(b[1].createdAt||0) - new Date(a[1].createdAt||0));
+
+        if (!entries.length) {
+            document.getElementById('pros-table').innerHTML = `<div class="empty-state"><i class="fa-solid fa-user-doctor"></i><p>Aucun professionnel enregistré.</p></div>`;
+            return;
+        }
+
+        const specialtyLabels = { medecin:'Médecin', kine:'Kinésithérapeute', infirmier:'Infirmier(ère)',
+            auxiliaire:'Auxiliaire', pharmacien:'Pharmacien', specialiste:'Spécialiste', autre:'Autre' };
+
+        document.getElementById('pros-table').innerHTML = `
+            <table class="data-table">
+                <thead><tr>
+                    <th>ID</th><th>Nom</th><th>Spécialité</th><th>Email</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th>
+                </tr></thead>
+                <tbody>${entries.map(([proId, p]) => {
+                    const lastLogin = p.lastLogin ? new Date(p.lastLogin).toLocaleDateString('fr-FR') : 'Jamais';
+                    const status = p.status === 'active' ? 'active' : 'inactive';
+                    return `<tr>
+                        <td><code style="font-size:12px; color:var(--muted);">${proId}</code></td>
+                        <td style="font-weight:600;">${p.name}</td>
+                        <td style="color:var(--muted); font-size:12px;">${specialtyLabels[p.specialty] || p.specialty}</td>
+                        <td style="color:var(--muted); font-size:12px;">${p.email}</td>
+                        <td><span class="badge-status ${status}">${p.status === 'active' ? 'Actif' : 'Suspendu'}</span></td>
+                        <td style="font-size:12px; color:var(--muted);">${lastLogin}</td>
+                        <td style="display:flex; gap:8px; padding-top:14px; flex-wrap:wrap;">
+                            <button class="btn btn-ghost" onclick="togglePro('${proId}')" title="${p.status==='active'?'Suspendre':'Réactiver'}">
+                                <i class="fa-solid fa-${p.status==='active'?'ban':'rotate-right'}"></i>
+                            </button>
+                            <button class="btn btn-ghost" onclick="resetProPin('${proId}')" title="Réinitialiser le code">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+    }
+
+    function togglePro(proId) {
+        MonacoCare.admin.toggleProfessional(proId);
+        renderPros(); renderStats();
+    }
+
+    function resetProPin(proId) {
+        if (confirm(`Réinitialiser le code d'accès de ${proId} ?`)) {
+            const newPin = MonacoCare.admin.resetPin(proId);
+            document.getElementById('modal-new-pin').textContent = newPin;
+            openModal('modal-reset-pin');
+        }
+    }
+
+    /* ── PENDING ──────────────────────────────────────────── */
+    function updatePendingBadge() {
+        const pending = MonacoCare.admin.getPendingRegistrations();
+        const count   = Object.keys(pending).length;
+        const badge   = document.getElementById('pending-badge');
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+
+    function renderPending() {
+        const pending = MonacoCare.admin.getPendingRegistrations();
+        const entries = Object.entries(pending);
+
+        if (!entries.length) {
+            document.getElementById('pending-table').innerHTML = `<div class="empty-state"><i class="fa-solid fa-check-double"></i><p>Aucune demande en attente. 🎉</p></div>`;
+            return;
+        }
+
+        const specialtyLabels = { medecin:'Médecin', kine:'Kinésithérapeute', infirmier:'Infirmier(ère)',
+            auxiliaire:'Auxiliaire', pharmacien:'Pharmacien', specialiste:'Spécialiste', autre:'Autre' };
+
+        document.getElementById('pending-table').innerHTML = `
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>Nom</th><th>Profession</th><th>E-mail</th><th>Action</th></tr></thead>
+                <tbody>${entries.map(([regId, r]) => {
+                    const date = new Date(r.createdAt).toLocaleDateString('fr-FR');
+                    const profession = r.professionLabel || r.specialty || '—';
+                    return `<tr>
+                        <td style="color:var(--muted); font-size:12px;">${date}</td>
+                        <td style="font-weight:600;">${r.name}</td>
+                        <td style="color:var(--muted); font-size:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${profession}">${profession}</td>
+                        <td style="color:var(--muted); font-size:12px;">${r.email}</td>
+                        <td style="display:flex; gap:8px; padding-top:14px;">
+                            <button class="btn btn-success" onclick="approvePro('${regId}')">
+                                <i class="fa-solid fa-check"></i> Valider
+                            </button>
+                            <button class="btn btn-danger" onclick="rejectPro('${regId}')">
+                                <i class="fa-solid fa-xmark"></i> Refuser
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+    }
+
+    function approvePro(regId) {
+        const result = MonacoCare.admin.approveProfessional(regId);
+        if (result) {
+            document.getElementById('modal-pro-id').textContent   = result.proId;
+            document.getElementById('modal-pro-pin').textContent  = result.pin;
+            document.getElementById('modal-pro-name').textContent = `Pour : ${result.name} (${result.email})`;
+            openModal('modal-approved-pro');
+            renderPending(); updatePendingBadge(); renderStats();
+        }
+    }
+
+    function rejectPro(regId) {
+        if (confirm('Refuser cette demande ?')) {
+            const pending = JSON.parse(localStorage.getItem('mc_pending_registrations') || '{}');
+            if (pending[regId]) { pending[regId].status = 'rejected'; localStorage.setItem('mc_pending_registrations', JSON.stringify(pending)); }
+            renderPending(); updatePendingBadge(); renderStats();
+        }
+    }
+
+    /* ── PATIENTS ─────────────────────────────────────────── */
+    function renderPatients() {
+        const patients = MonacoCare.admin.getAllPatients();
+        const pros = MonacoCare.admin.getAllProfessionals();
+        const entries = Object.entries(patients);
+
+        if (!entries.length) {
+            document.getElementById('patients-table').innerHTML = `<div class="empty-state"><i class="fa-solid fa-bed-pulse"></i><p>Aucun patient enregistré.</p></div>`;
+            return;
+        }
+
+        document.getElementById('patients-table').innerHTML = `
+            <table class="data-table">
+                <thead><tr><th>Patient</th><th>Âge</th><th>Professionnels assignés</th><th>Codes famille</th></tr></thead>
+                <tbody>${entries.map(([id, p]) => {
+                    const proNames = (p.assignedPros || []).map(pid => pros[pid]?.name || pid).join(', ') || '—';
+                    return `<tr>
+                        <td style="font-weight:600;">${p.name}</td>
+                        <td style="color:var(--muted);">${p.age} ans</td>
+                        <td style="font-size:12px; color:var(--muted);">${proNames}</td>
+                        <td>${(p.assignedFamilyCodes||[]).map(c=>`<span class="code-pill" style="font-size:12px;">${c}</span>`).join(' ') || '—'}</td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+    }
+
+    /* ── MODALS ───────────────────────────────────────────── */
+    function openModal(id)  { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+    });
+</script>
+</body>
+</html>

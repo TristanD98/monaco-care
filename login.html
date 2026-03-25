@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Care — Connexion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --monaco-red: #CE1126;
+            --monaco-red-dark: #A50D1E;
+            --monaco-red-light: rgba(206,17,38,0.1);
+            --white: #ffffff;
+            --off-white: #F8F9FA;
+            --text-dark: #1A1A2E;
+            --text-muted: #6B7280;
+            --silver-dark: #E2E8F0;
+            --silver-light: #F1F5F9;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1A0A0D 0%, #2D0F17 40%, #1A0A0D 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 30%, rgba(206,17,38,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 70%, rgba(206,17,38,0.05) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes bgPulse {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.05) rotate(2deg); }
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Logo */
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--monaco-red), #FF2040);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(206,17,38,0.4);
+        }
+
+        .brand-logo i {
+            font-size: 32px;
+            color: white;
+        }
+
+        .brand h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+
+        .brand p {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        /* Card */
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        /* Role Selector — Step 1 */
+        #step-choose { display: block; }
+        #step-family { display: none; }
+        #step-pro { display: none; }
+
+        .step-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .step-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .role-btn {
+            width: 100%;
+            padding: 18px 20px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.06);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .role-btn:hover {
+            background: rgba(206,17,38,0.2);
+            border-color: rgba(206,17,38,0.5);
+            transform: translateY(-1px);
+        }
+
+        .role-btn:last-child { margin-bottom: 0; }
+
+        .role-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .role-icon.family { background: rgba(16,185,129,0.2); color: #10B981; }
+        .role-icon.pro { background: rgba(206,17,38,0.2); color: var(--monaco-red); }
+
+        .role-btn-text {
+            text-align: left;
+            flex: 1;
+        }
+
+        .role-btn-text small {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.45);
+            margin-top: 2px;
+        }
+
+        .role-btn-text .chevron {
+            margin-left: auto;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-input::placeholder { color: rgba(255,255,255,0.25); }
+        .form-input:focus {
+            border-color: var(--monaco-red);
+            background: rgba(206,17,38,0.08);
+            box-shadow: 0 0 0 3px rgba(206,17,38,0.15);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 14px;
+        }
+
+        .input-group .form-input {
+            padding-left: 42px;
+        }
+
+        .form-input-code {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+
+        /* Tabs */
+        .pro-tabs {
+            display: flex;
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+
+        .pro-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pro-tab.active {
+            background: var(--monaco-red);
+            color: white;
+            box-shadow: 0 4px 12px rgba(206,17,38,0.3);
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--monaco-red), #FF2040);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 24px rgba(206,17,38,0.3);
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 32px rgba(206,17,38,0.4);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Back link */
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .back-link:hover { color: rgba(255,255,255,0.7); }
+
+        /* Demo code hint */
+        .code-hint {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .code-hint i { color: #10B981; font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+        .code-hint p { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+        .code-hint strong { color: rgba(255,255,255,0.85); }
+
+        /* Checkbox */
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--monaco-red);
+            cursor: pointer;
+        }
+
+        .checkbox-row label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.55);
+            cursor: pointer;
+        }
+
+        /* Separator */
+        .separator {
+            position: relative;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .separator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .separator span {
+            position: relative;
+            background: transparent;
+            padding: 0 12px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* Feedback */
+        .feedback {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .feedback.error {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #FCA5A5;
+        }
+
+        .feedback.success {
+            background: rgba(16,185,129,0.15);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #6EE7B7;
+        }
+
+        .feedback.show { display: block; }
+
+        /* Loading spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.2);
+        }
+
+        .login-footer a { color: rgba(255,255,255,0.35); text-decoration: none; }
+        .login-footer a:hover { color: rgba(255,255,255,0.6); }
+    </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+    <!-- Brand -->
+    <div class="brand">
+        <div class="brand-logo">
+            <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <h1>Monaco Care</h1>
+        <p>Plateforme de soins coordonnés</p>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+
+        <!-- STEP 1: Choisir le profil -->
+        <div id="step-choose">
+            <p class="step-title">Bienvenue</p>
+            <p class="step-subtitle">Sélectionnez votre type d'accès<br>pour continuer.</p>
+
+            <button class="role-btn" id="btn-family" onclick="showStep('family')">
+                <div class="role-icon family">
+                    <i class="fa-solid fa-house-heart"></i>
+                </div>
+                <div class="role-btn-text">
+                    Particulier / Famille
+                    <small>Accès avec un code démo fourni par votre équipe soignante</small>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.25); margin-left:auto;"></i>
+            </button>
+
+            <button class="role-btn" id="btn-pro" onclick="showStep('pro')">
+                <div class="role-icon pro">
+                    <i class="fa-solid fa-user-doctor"></i>
+                </div>
+                <div class="role-btn-text">
+                    Professionnel de santé
+                    <small>Connexion ou inscription sécurisée avec votre identifiant</small>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.25); margin-left:auto;"></i>
+            </button>
+        </div>
+
+        <!-- STEP 2A: Accès Famille -->
+        <div id="step-family">
+            <button class="back-link" onclick="showStep('choose')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <p class="step-title">Accès Famille</p>
+
+            <div class="code-hint">
+                <i class="fa-solid fa-circle-info"></i>
+                <p>Saisissez le <strong>code d'accès unique</strong> qui vous a été communiqué par l'équipe soignante ou l'établissement.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Code d'accès</label>
+                <input type="text" id="family-code-input" class="form-input form-input-code"
+                    placeholder="XXXX-XXXX" maxlength="12"
+                    autocomplete="off" autocapitalize="characters" spellcheck="false">
+            </div>
+
+            <button class="btn-primary" id="btn-family-login" onclick="loginFamily()">
+                Accéder à la démo
+            </button>
+
+            <div class="feedback" id="family-feedback"></div>
+        </div>
+
+        <!-- STEP 2B: Professionnel de santé -->
+        <div id="step-pro">
+            <button class="back-link" onclick="showStep('choose')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <p class="step-title">Professionnel de santé</p>
+
+            <div class="pro-tabs">
+                <button class="pro-tab active" id="tab-login" onclick="switchProTab('login')">Connexion</button>
+                <button class="pro-tab" id="tab-register" onclick="switchProTab('register')">S'inscrire</button>
+            </div>
+
+            <!-- Connexion Pro -->
+            <div id="pro-login-form">
+                <div class="form-group">
+                    <label class="form-label">Identifiant professionnel</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-id-card"></i>
+                        <input type="text" id="pro-id-input" class="form-input"
+                            placeholder="Ex: PRO-001"
+                            autocomplete="username" autocapitalize="characters">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Code d'accès</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="pro-pin-input" class="form-input"
+                            placeholder="••••••" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="remember-me" checked>
+                    <label for="remember-me">Rester connecté sur cet appareil</label>
+                </div>
+
+                <button class="btn-primary" id="btn-pro-login" onclick="loginPro()">
+                    Se connecter
+                </button>
+
+                <div class="feedback" id="pro-login-feedback"></div>
+            </div>
+
+            <!-- Inscription Pro -->
+            <div id="pro-register-form" style="display:none;">
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="reg-firstname-input" class="form-input"
+                            placeholder="Marie" autocomplete="given-name">
+                    </div>
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="reg-lastname-input" class="form-input"
+                            placeholder="DUPONT" autocomplete="family-name">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Profession / Rôle <span style="color:rgba(255,255,255,0.3); font-size:10px; text-transform:none; letter-spacing:0;">(apparaît sous votre profil)</span></label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-stethoscope"></i>
+                        <input type="text" id="reg-profession-input" class="form-input"
+                            placeholder="Ex : Kinésithérapeute — Rééducation neurologique"
+                            autocomplete="organization-title">
+                    </div>
+                    <p style="font-size:11px; color:rgba(255,255,255,0.3); margin-top:6px; line-height:1.4;">
+                        Ce texte libre s'affichera comme description lors des recherches par les familles.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Adresse e-mail professionnelle</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-envelope"></i>
+                        <input type="email" id="reg-email-input" class="form-input"
+                            placeholder="prenom.nom@etablissement.fr" autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="separator"><span>Votre demande sera validée par l'administrateur</span></div>
+
+                <button class="btn-primary" id="btn-pro-register" onclick="registerPro()">
+                    Envoyer ma demande d'accès
+                </button>
+
+                <div class="feedback" id="pro-register-feedback"></div>
+            </div>
+        </div>
+
+    </div><!-- /card -->
+
+    <div class="login-footer">
+        <a href="admin.html">Console d'administration</a> &nbsp;·&nbsp;
+        Données protégées — Monaco Care © 2026
+    </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script>
+    /* ============================================================
+       NAVIGATION ENTRE LES ÉTAPES
+    ============================================================ */
+    function showStep(step) {
+        document.getElementById('step-choose').style.display = 'none';
+        document.getElementById('step-family').style.display = 'none';
+        document.getElementById('step-pro').style.display   = 'none';
+
+        if (step === 'choose') document.getElementById('step-choose').style.display = 'block';
+        if (step === 'family') document.getElementById('step-family').style.display = 'block';
+        if (step === 'pro')    document.getElementById('step-pro').style.display    = 'block';
+
+        // Clear feedback
+        document.querySelectorAll('.feedback').forEach(f => {
+            f.className = 'feedback';
+            f.innerHTML = '';
+        });
+    }
+
+    function switchProTab(tab) {
+        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+        document.getElementById('pro-login-form').style.display    = tab === 'login'    ? 'block' : 'none';
+        document.getElementById('pro-register-form').style.display = tab === 'register' ? 'block' : 'none';
+    }
+
+    /* ============================================================
+       FEEDBACK HELPERS
+    ============================================================ */
+    function showFeedback(id, type, message) {
+        const el = document.getElementById(id);
+        el.className = `feedback ${type} show`;
+        el.innerHTML = message;
+    }
+
+    function setLoading(btnId, loading, originalText) {
+        const btn = document.getElementById(btnId);
+        if (loading) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner"></span> Vérification...`;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    /* ============================================================
+       FORMATAGE DU CODE FAMILLE
+    ============================================================ */
+    document.addEventListener('DOMContentLoaded', () => {
+        const codeInput = document.getElementById('family-code-input');
+        if (codeInput) {
+            codeInput.addEventListener('input', (e) => {
+                let val = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                if (val.length > 4) val = val.slice(0, 4) + '-' + val.slice(4, 8);
+                e.target.value = val;
+            });
+        }
+    });
+
+    /* ============================================================
+       PARCOURS FAMILLE — Validation du code démo
+    ============================================================ */
+    async function loginFamily() {
+        const code = document.getElementById('family-code-input').value.trim().toUpperCase();
+
+        if (!code || code.length < 4) {
+            showFeedback('family-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez saisir votre code d\'accès.');
+            return;
+        }
+
+        setLoading('btn-family-login', true, 'Accéder à la démo');
+
+        try {
+            // Vérification du code dans Firebase Firestore (ou localStorage en mode démo)
+            const result = await MonacoCare.validateDemoCode(code);
+
+            if (result.valid) {
+                // Stocker la session
+                MonacoCare.setSession({
+                    role: 'family',
+                    displayName: 'Famille',
+                    patientId: result.patientId || 'patient-demo',
+                    demoCode: code,
+                    expiresAt: result.expiresAt
+                });
+
+                showFeedback('family-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Code valide ! Redirection en cours...');
+
+                setTimeout(() => {
+                    window.location.href = 'index.html?role=family';
+                }, 1200);
+
+            } else {
+                setLoading('btn-family-login', false, 'Accéder à la démo');
+                showFeedback('family-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message || 'Code invalide ou expiré. Vérifiez auprès de l\'équipe soignante.'}`);
+            }
+
+        } catch (err) {
+            setLoading('btn-family-login', false, 'Accéder à la démo');
+            showFeedback('family-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur de connexion. Veuillez réessayer.');
+            console.error('[MonacoCare] loginFamily error:', err);
+        }
+    }
+
+    /* ============================================================
+       PARCOURS PRO — Connexion identifiant + code
+    ============================================================ */
+    async function loginPro() {
+        const proId  = document.getElementById('pro-id-input').value.trim().toUpperCase();
+        const pin    = document.getElementById('pro-pin-input').value.trim();
+        const remember = document.getElementById('remember-me').checked;
+
+        if (!proId) {
+            showFeedback('pro-login-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez saisir votre identifiant professionnel.');
+            return;
+        }
+        if (!pin) {
+            showFeedback('pro-login-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez saisir votre code d\'accès.');
+            return;
+        }
+
+        setLoading('btn-pro-login', true, 'Se connecter');
+
+        try {
+            const result = await MonacoCare.loginProfessional(proId, pin, remember);
+
+            if (result.success) {
+                MonacoCare.setSession({
+                    role: result.specialty || 'pro',
+                    displayName: result.displayName || proId,
+                    proId: proId,
+                    remember: remember
+                });
+
+                showFeedback('pro-login-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Connexion réussie ! Redirection...');
+
+                setTimeout(() => {
+                    window.location.href = 'index.html?role=' + (result.specialty || 'pro');
+                }, 1000);
+
+            } else {
+                setLoading('btn-pro-login', false, 'Se connecter');
+                showFeedback('pro-login-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message || 'Identifiant ou code incorrect.'}`);
+            }
+
+        } catch (err) {
+            setLoading('btn-pro-login', false, 'Se connecter');
+            showFeedback('pro-login-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur de connexion. Vérifiez votre connexion internet.');
+            console.error('[MonacoCare] loginPro error:', err);
+        }
+    }
+
+    /* ============================================================
+       PARCOURS PRO — Inscription (demande d'accès)
+    ============================================================ */
+    async function registerPro() {
+        const firstName      = document.getElementById('reg-firstname-input').value.trim();
+        const lastName       = document.getElementById('reg-lastname-input').value.trim();
+        const professionLabel = document.getElementById('reg-profession-input').value.trim();
+        const email          = document.getElementById('reg-email-input').value.trim();
+
+        if (!firstName || !lastName) {
+            showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez renseigner votre prénom et votre nom.');
+            return;
+        }
+        if (!professionLabel) {
+            showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez décrire votre profession ou rôle.');
+            return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Adresse e-mail invalide.');
+            return;
+        }
+
+        setLoading('btn-pro-register', true, 'Envoyer ma demande d\'accès');
+
+        try {
+            const result = await MonacoCare.registerProfessional({ firstName, lastName, professionLabel, email });
+
+            if (result.success) {
+                document.getElementById('pro-register-form').innerHTML = `
+                    <div style="text-align:center; padding:20px 0;">
+                        <i class="fa-solid fa-paper-plane" style="font-size:40px; color:#10B981; margin-bottom:16px;"></i>
+                        <p style="color:white; font-weight:700; font-size:16px; margin-bottom:8px;">Demande envoyée !</p>
+                        <p style="color:rgba(255,255,255,0.5); font-size:13px; line-height:1.6;">
+                            Votre demande a été transmise à l'équipe Monaco Care.<br><br>
+                            Vous recevrez un e-mail à <strong style="color:rgba(255,255,255,0.8);">${email}</strong> dès que votre compte sera validé (généralement sous 24h).
+                        </p>
+                    </div>
+                `;
+            } else {
+                setLoading('btn-pro-register', false, 'Envoyer ma demande d\'accès');
+                showFeedback('pro-register-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message || 'Une erreur est survenue.'}`);
+            }
+
+        } catch (err) {
+            setLoading('btn-pro-register', false, 'Envoyer ma demande d\'accès');
+            showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur. Vérifiez votre connexion.');
+            console.error('[MonacoCare] registerPro error:', err);
+        }
+    }
+</script>
+</body>
+</html>

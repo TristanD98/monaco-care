@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Care - Démo Complète</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=2">
+    <script src="firebase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="demo-wrapper">
+        <div class="phone">
+            <div class="notch"></div>
+            <div class="app-container">
+                
+                <!-- Modifed to support Flex spacing for gear icon -->
+                <header class="patient-header" style="justify-content: space-between; align-items: center;">
+                    <div class="profile-info">
+                        <img src="https://i.pravatar.cc/150?u=jeanpierre" alt="Patient" class="avatar">
+                        <div>
+                            <h2>Jean-Pierre DUBOIS</h2>
+                            <p>ID: 45987301 • 78 ans</p>
+                        </div>
+                    </div>
+                    <!-- Settings Button for Caregiver -->
+                    <button class="icon-btn" id="settings-btn" style="color: white; font-size: 20px;"><i class="fa-solid fa-gear"></i></button>
+                </header>
+
+                <div class="tabs">
+                    <div class="tab active" data-target="flux-view">Flux Monaco</div>
+                    <div class="tab" data-target="vault-view">Coffre <i class="fa-solid fa-lock" style="font-size:10px;"></i></div>
+                    <div class="tab" data-target="chat-list-view">Chat Pro</div>
+                </div>
+
+                <!-- Role switcher: visible seulement en mode démo admin (pas de session réelle) -->
+                <div class="role-switcher" id="role-switcher-container">
+                    <span>Simuler en tant que : </span>
+                    <select id="role-select">
+                        <option value="kine">Kiné (Marc)</option>
+                        <option value="medecin">Médecin (Dr. Sarah)</option>
+                        <option value="auxiliaire">Auxiliaire (Sophie)</option>
+                        <option value="family">Fille (Emma) - Accès Limité</option>
+                    </select>
+                </div>
+                <!-- Bandeau session réelle -->
+                <div id="session-banner" style="display:none; background:rgba(206,17,38,0.08); border-bottom:1px solid rgba(206,17,38,0.15); padding:8px 20px; display:none; align-items:center; justify-content:space-between;">
+                    <span id="session-info" style="font-size:12px; color:#CE1126; font-weight:600;"></span>
+                    <button onclick="MonacoCare.clearSession(); window.location.href='login.html';" style="font-size:11px; color:#CE1126; background:none; border:none; cursor:pointer; font-family:Inter,sans-serif;">Déconnexion</button>
+                </div>
+
+                <div class="views-container">
+
+                    <!-- VIEW 1 : FLUX MONACO -->
+                    <div id="flux-view" class="view">
+                        <!-- Flux Filter Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px 0 20px;">
+                            <h3 style="font-size: 14px; font-weight: 600; color: var(--text-dark);">Fil d'actualité</h3>
+                            <div class="filter-dropdown" style="position: relative;">
+                                <button id="flux-filter-btn" style="background:none; border:none; color:var(--monaco-red); font-size:13px; font-weight:600; cursor:pointer;">
+                                    <i class="fa-solid fa-filter"></i> <span id="current-filter-name">Tous</span>
+                                </button>
+                                <div id="flux-filter-menu" class="hidden" style="position: absolute; right: 0; top: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 100;">
+                                    <button class="filter-option" data-filter="all" style="width:100%; text-align:left; padding:10px; border:none; background:none; border-bottom:1px solid #eee; cursor:pointer; font-size:13px; font-weight:bold;">Tous les messages</button>
+                                    <button class="filter-option" data-filter="medical" style="width:100%; text-align:left; padding:10px; border:none; background:none; border-bottom:1px solid #eee; cursor:pointer; font-size:13px;">Médical Uniquement</button>
+                                    <button class="filter-option" data-filter="team" style="width:100%; text-align:left; padding:10px; border:none; background:none; border-bottom:1px solid #eee; cursor:pointer; font-size:13px;">Équipe & Famille</button>
+                                    <button class="filter-option" data-filter="public" style="width:100%; text-align:left; padding:10px; border:none; background:none; cursor:pointer; font-size:13px;">Public</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quick-actions-container" style="padding-top: 5px;">
+                            <p class="section-title">Enregistrement Rapide (3-Click)</p>
+                            <div class="quick-actions" id="flux-quick-actions">
+                                <!-- JS inserts relevant buttons here -->
+                            </div>
+                        </div>
+                        
+                        <div class="feed-area" id="flux-feed">
+                            <!-- Feed items -->
+                            <div class="feed-post">
+                                <div class="post-header">
+                                    <img src="https://i.pravatar.cc/150?u=sophie" class="post-avatar">
+                                    <div class="post-meta">
+                                        <h4>Sophie (Auxiliaire)</h4>
+                                        <p>Il y a 2 heures</p>
+                                    </div>
+                                    <span class="visibility-tag tag-public">PUBLIC</span>
+                                </div>
+                                <div class="post-content">
+                                    <p>Repas pris en entier ! Bonne humeur ce matin. 😊🍽️</p>
+                                </div>
+                            </div>
+
+                            <div class="feed-post">
+                                <div class="post-header">
+                                    <img src="https://i.pravatar.cc/150?u=marc" class="post-avatar">
+                                    <div class="post-meta">
+                                        <h4>Marc (Kiné)</h4>
+                                        <p>Hier à 10:45</p>
+                                    </div>
+                                    <span class="visibility-tag tag-team">ÉQUIPE & FAMILLE</span>
+                                </div>
+                                <div class="post-content">
+                                    <p>Excellente séance aujourd'hui. Jean-Pierre a pu faire 15 pas sans l'aide du déambulateur sous ma supervision. L'équilibre s'améliore.</p>
+                                </div>
+                            </div>
+
+                            <div class="feed-post medical-only-post">
+                                <div class="post-header">
+                                    <img src="https://i.pravatar.cc/150?u=sarah" class="post-avatar">
+                                    <div class="post-meta">
+                                        <h4>Dr. Sarah (Médecin)</h4>
+                                        <p>Lun à 14:00</p>
+                                    </div>
+                                    <span class="visibility-tag tag-medical">MÉDICAL UNIQUE</span>
+                                </div>
+                                <div class="post-content">
+                                    <p>Observation d'une légère inflammation au niveau de l'épaule gauche (suspectée post-traumatique mineure). J'ai prescrit une pommade AINS locale 2x/jour pendant 5 jours. À surveiller par l'équipe soignante.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Zone de saisie libre (Flux) -->
+                        <div class="input-area" style="position:static; border-top: 1px solid var(--silver-dark); padding-bottom: 20px;">
+                            <button class="action-btn" id="flux-attach-btn"><i class="fa-solid fa-paperclip"></i></button>
+                            <button class="action-btn urgent-btn" id="flux-urgent-toggle"><i class="fa-solid fa-triangle-exclamation"></i></button>
+                            <div class="input-wrapper">
+                                <input type="text" id="flux-message-input" placeholder="Écrire un message, joindre une photo...">
+                            </div>
+                            <button class="send-btn" id="flux-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 2 : COFFRE MEDICAL -->
+                    <div id="vault-view" class="view hidden">
+                        <div class="biometric-overlay" id="biometric-overlay">
+                            <i class="fa-solid fa-fingerprint fa-4x bio-icon"></i>
+                            <h3>Authentification Requise</h3>
+                            <p>Accès réservé au personnel médical via Face ID / Empreinte.</p>
+                            <button class="bio-btn" id="simulate-bio-btn">Toucher pour déverrouiller</button>
+                        </div>
+                        
+                        <div class="vault-content hidden" id="vault-content">
+                            <div class="vault-header-banner">
+                                <div class="unlocked-badge">
+                                    <i class="fa-solid fa-lock-open"></i> DÉVERROUILLÉ
+                                </div>
+                                <p>Accès autorisé (MFA Validé)</p>
+                            </div>
+
+                            <div class="vault-section">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                                    <h3 style="margin-bottom:0;">Constantes (10:11 AM)</h3>
+                                    <button class="history-btn" data-metric="Constantes Vitales"><i class="fa-solid fa-chart-area"></i> Historique</button>
+                                </div>
+                                <div class="vitals-grid">
+                                    <div class="vital-card red">
+                                        <div class="vital-icon"><i class="fa-solid fa-heart-pulse"></i> Tension Art.</div>
+                                        <div class="vital-value" style="margin:5px 0;">138/84<span>mmHg</span></div>
+                                        <div class="vital-graph"><i class="fa-solid fa-chart-line"></i></div>
+                                        <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à 09:42</div>
+                                    </div>
+                                    <div class="vital-card silver">
+                                        <div class="vital-icon"><i class="fa-solid fa-droplet"></i> SpO2</div>
+                                        <div class="vital-value" style="margin:5px 0;">97<span>%</span></div>
+                                        <div class="vital-graph stable">Normal</div>
+                                        <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à 10:05</div>
+                                    </div>
+                                </div>
+                                <button class="add-btn" id="add-vitals-btn" style="margin-top: 15px;"><i class="fa-solid fa-notes-medical"></i> Saisir de nouvelles constantes</button>
+                            </div>
+
+                            <div class="vault-section">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                                    <h3 style="margin-bottom:0;">Évaluations de la Douleur</h3>
+                                    <button class="history-btn" data-metric="Échelle de Douleur"><i class="fa-solid fa-chart-area"></i> Historique</button>
+                                </div>
+                                <div class="pain-trackers">
+                                    <div class="pain-card">
+                                        <div class="pain-header">
+                                            <span>Générale</span>
+                                            <span class="pain-score">4/10</span>
+                                        </div>
+                                        <div class="pain-bar val-4"></div>
+                                        <div class="pain-time"><i class="fa-regular fa-clock"></i> Pris ce matin (08:15)</div>
+                                    </div>
+                                    <div class="pain-card">
+                                        <div class="pain-header">
+                                            <span>Épaule Gauche</span>
+                                            <span class="pain-score">6/10</span>
+                                        </div>
+                                        <div class="pain-bar val-6"></div>
+                                        <div class="pain-time"><i class="fa-regular fa-clock"></i> Hier (18:00)</div>
+                                    </div>
+                                </div>
+                                <button class="add-btn" id="open-pain-modal-btn"><i class="fa-solid fa-plus-circle"></i> Ajouter localisation</button>
+                            </div>
+
+                            <div class="vault-section">
+                                <h3>Notes Cliniques</h3>
+                                <div id="clinical-notes-container" style="display:flex; flex-direction:column; gap:10px;">
+                                    <div class="clinical-note">
+                                        <strong>Hier, 15:45 - Dr. Sarah</strong>
+                                        <p>Patient calme. Rythme cardiaque régulier. Les douleurs à l'épaule s'estompent sous traitement local.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; gap:10px; margin: 20px;">
+                                <button class="dictation-btn" id="type-btn" style="margin:0; flex:1; background:var(--text-dark); font-size:13px;"><i class="fa-solid fa-keyboard"></i> Saisie Clavier</button>
+                                <button class="dictation-btn" id="dictate-btn" style="margin:0; flex:1; font-size:13px;"><i class="fa-solid fa-microphone"></i> Dictée Vocale</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 3 : CHAT LIST (Previously existing) -->
+                    <div id="chat-list-view" class="view hidden">
+                        <div class="list-header">
+                            <h3>Conversations du patient</h3>
+                            <button id="new-chat-btn" class="icon-btn"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </div>
+                        <div class="chat-list">
+                            <div class="chat-item" data-chat="global">
+                                <div class="chat-avatar group"><i class="fa-solid fa-users-medical"></i></div>
+                                <div class="chat-content">
+                                    <div class="chat-title-row"><h4>Équipe Médicale Globale</h4><span class="time">10:30</span></div>
+                                    <p><b>Marc:</b> Séance terminée. La mobilité...</p>
+                                </div>
+                            </div>
+                            <div class="chat-item" data-chat="assistant">
+                                <div class="chat-avatar assist"><i class="fa-solid fa-clipboard-user"></i></div>
+                                <div class="chat-content">
+                                    <div class="chat-title-row"><h4>Assistante (Médicaments)</h4><span class="time">Hier</span></div>
+                                    <p>N'oubliez pas les cachets après le repas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 4 : CHAT ROOM (Previously existing) -->
+                    <div id="chat-room-view" class="view hidden" style="z-index: 50;">
+                        <div class="room-header">
+                            <button id="back-btn" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                            <div class="room-title">
+                                <h3 id="current-chat-title">Équipe Médicale Globale</h3>
+                                <p id="current-chat-subtitle">3 participants</p>
+                            </div>
+                        </div>
+                        <div class="chat-area" id="chat-messages"></div>
+                        <div id="attachment-menu" class="attachment-popup hidden">
+                            <button class="attach-item"><i class="fa-solid fa-camera"></i> Appareil Photo</button>
+                            <button class="attach-item"><i class="fa-solid fa-file-prescription"></i> Nouvelle Ordonnance</button>
+                        </div>
+                        <div class="input-area">
+                            <button class="action-btn" id="prescription-btn"><i class="fa-solid fa-plus"></i></button>
+                            <button class="action-btn urgent-btn" id="urgent-toggle"><i class="fa-solid fa-triangle-exclamation"></i></button>
+                            <div class="input-wrapper">
+                                <input type="text" id="message-input" placeholder="Message...">
+                            </div>
+                            <button class="send-btn" id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- New Chat Modal -->
+                <div id="new-chat-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content">
+                        <h3 style="margin-bottom: 10px;">Nouvelle Discussion</h3>
+                        <p style="margin-bottom: 15px; font-size:12px; color:var(--text-muted);">Sélectionnez un professionnel.</p>
+                        
+                        <div class="contact-list" style="display:flex; flex-direction:column; gap:8px;">
+                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red); width:20px;"></i> Dr. Sarah (Médecin)</button>
+                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-user-nurse" style="color:var(--monaco-red); width:20px;"></i> Sylvie (Infirmière)</button>
+                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-house-chimney-user" style="color:var(--monaco-red); width:20px;"></i> Emma (Fille du patient)</button>
+                        </div>
+                        <button class="modal-btn cancel" id="close-chat-modal" style="margin-top:15px; margin-bottom: 0;">Annuler</button>
+                    </div>
+                </div>
+
+                <!-- New Shortcut Modal -->
+                <div id="new-shortcut-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content">
+                        <h3 style="margin-bottom: 5px;">Gérer les Raccourcis (<span id="role-name-display"></span>)</h3>
+                        <p style="margin-bottom: 15px; font-size:12px; color:var(--text-muted);">Gérez vos boutons rapides personnalisés.</p>
+                        
+                        <div id="shortcuts-manage-list" style="margin-bottom: 20px; display:flex; flex-direction:column; gap:8px; text-align:left; max-height:200px; overflow-y:auto;">
+                        </div>
+
+                        <p style="margin-bottom: 10px; font-weight:600; font-size:13px; text-align:left;">Créer une nouvelle action :</p>
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <input type="text" id="shortcut-emoji" placeholder="Ex: 🩺" style="width: 30%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 14px;">
+                            <input type="text" id="shortcut-name" placeholder="Nom de l'action" style="width: 70%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 14px;">
+                        </div>
+                        
+                        <button class="modal-btn" id="save-shortcut-btn" style="margin-bottom: 10px;">Ajouter aux raccourcis</button>
+                        <button class="modal-btn cancel" id="close-shortcut-modal" style="margin-bottom: 0;">Fermer</button>
+                    </div>
+                </div>
+
+                <!-- New Pain Localisation Modal -->
+                <div id="add-pain-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content">
+                        <h3 style="margin-bottom: 15px;">Évaluer une Douleur</h3>
+                        <div style="display: flex; flex-direction:column; gap: 15px; margin-bottom: 20px; text-align:left;">
+                            <label style="font-size:13px; font-weight:600;">Localisation (ex: Genou droit)</label>
+                            <input type="text" id="pain-location-input" placeholder="Où se situe la douleur ?" style="padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 14px;">
+                            
+                            <label style="font-size:13px; font-weight:600;">Intensité (0 à 10)</label>
+                            <input type="number" id="pain-score-input" min="0" max="10" placeholder="7" style="padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 14px;">
+                        </div>
+                        
+                        <button class="modal-btn" id="save-pain-btn" style="margin-bottom: 10px;">Enregistrer l'évaluation</button>
+                        <button class="modal-btn cancel" id="close-pain-modal" style="margin-bottom: 0;">Annuler</button>
+                    </div>
+                </div>
+
+                <!-- History Graph Modal -->
+                <div id="history-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content" style="max-width:350px;">
+                        <h3 id="history-modal-title" style="margin-bottom: 15px;">Historique</h3>
+                        
+                        <div class="history-tabs">
+                            <button class="hist-tab active">24h</button>
+                            <button class="hist-tab">48h</button>
+                            <button class="hist-tab">72h</button>
+                        </div>
+
+                        <!-- Dynamic Charts Container -->
+                        <div id="charts-container" style="margin-bottom: 20px; width:100%; display:flex; flex-direction:column; overflow:hidden;">
+                            <!-- Canvas générés par JS ici -->
+                        </div>
+
+
+                        <button class="modal-btn cancel" id="close-history-modal" style="margin-top: 20px; margin-bottom: 0;">Fermer l'historique</button>
+                    </div>
+                </div>
+
+                <!-- Settings Modal for Main Account -->
+                <div id="settings-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="margin:0;">Paramètres du Compte</h3>
+                            <button id="close-settings-modal" class="icon-btn" style="padding:0; font-size:16px; color:var(--text-dark);"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px;">Gérez vos accès, vos bénéficiaires et votre abonnement en tant que compte principal (Aidant / Tuteur).</p>
+
+                        <!-- Add Patient -->
+                        <div class="vault-section" style="text-align:left; margin-bottom:15px;">
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-plus" style="color:var(--monaco-red);"></i> Ajouter un bénéficiaire / patient</h4>
+                            <input type="text" id="new-patient-name" placeholder="Nom complet" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
+                            <input type="text" id="new-patient-id" placeholder="N° Sécurité Sociale (optionnel)" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
+                            <button class="modal-btn" id="add-patient-btn" style="margin:0; padding:10px; font-size:13px;">Créer le dossier du bénéficiaire</button>
+                        </div>
+
+                        <!-- Add Pro via ID -->
+                        <div class="vault-section" style="text-align:left; margin-bottom:15px;">
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red);"></i> Ajouter un professionnel</h4>
+                            <p style="font-size:11px; margin-bottom:10px; color:var(--text-muted);">Saisissez le N° d'identifiant unique fourni au professionnel lorsqu'il se connecte à l'application.</p>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="pro-unique-id" placeholder="Ex: PRO-842" style="flex:1; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px;">
+                                <button class="modal-btn" id="add-pro-btn" style="margin:0; padding:10px 15px; width:auto; font-size:13px;">Ajouter</button>
+                            </div>
+                        </div>
+
+                        <!-- Subscription -->
+                        <div class="vault-section" style="text-align:left; margin-bottom:10px;">
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-credit-card" style="color:var(--monaco-red);"></i> Abonnement Monaco Care</h4>
+                            <div style="border:1px solid var(--silver-dark); border-radius:8px; padding:12px; margin-bottom:10px; background:var(--silver-light);">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <strong>Formule Premium</strong>
+                                    <span class="visibility-tag tag-medical" style="background:#10B981; color:white;">ACTIF</span>
+                                </div>
+                                <p style="font-size:11px; margin-top:5px; color:var(--text-muted);">Prochain prélèvement : 15 Avril 2026 (19,99€/mois)</p>
+                            </div>
+                            <button class="modal-btn" style="background:white; color:var(--text-dark); border:1px solid var(--silver-dark); margin:0;" id="pay-sub-btn">Gérer l'abonnement et payer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="home-indicator"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js?v=2"></script>
+    <script>
+    // Vérification de session au chargement
+    (function() {
+        const session = MonacoCare.getSession();
+        const urlRole = new URLSearchParams(window.location.search).get('role');
+
+        if (session) {
+            // Session réelle : masquer le role-switcher, afficher le bandeau
+            const switcher = document.getElementById('role-switcher-container');
+            const banner   = document.getElementById('session-banner');
+            const info     = document.getElementById('session-info');
+
+            if (switcher) switcher.style.display = 'none';
+            if (banner)   banner.style.display = 'flex';
+
+            const roleLabel = { family:'Famille', medecin:'Médecin', kine:'Kinésithérapeute',
+                auxiliaire:'Auxiliaire', infirmier:'Infirmier(ère)', pro:'Professionnel' };
+
+            if (info) {
+                const name = session.displayName || session.proId || 'Utilisateur';
+                const role = roleLabel[session.role] || session.role;
+                info.textContent = `Connecté(e) en tant que : ${name} — ${role}`;
+            }
+
+            // Synchroniser le role-select avec le rôle de session
+            const roleSelect = document.getElementById('role-select');
+            if (roleSelect && session.role) {
+                const map = { medecin:'medecin', kine:'kine', auxiliaire:'auxiliaire',
+                    infirmier:'auxiliaire', family:'family', pro:'kine' };
+                const val = map[session.role] || 'kine';
+                roleSelect.value = val;
+                roleSelect.dispatchEvent(new Event('change'));
+            }
+        } else if (!urlRole) {
+            // Pas de session et pas de paramètre role = rediriger vers login
+            // (Commenté pour permettre la démo directe sans login)
+            // window.location.href = 'login.html';
+        }
+    })();
+    </script>
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL — AJOUTER UN PATIENT (pour les professionnels)
+═══════════════════════════════════════════════════════════════ -->
+<div id="modal-add-patient" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     backdrop-filter:blur(6px); z-index:9000; align-items:flex-end; justify-content:center;">
+    <div style="background:#fff; border-radius:24px 24px 0 0; padding:28px 24px 40px;
+         width:100%; max-width:480px; box-shadow:0 -20px 60px rgba(0,0,0,0.2); max-height:90vh; overflow-y:auto;">
+
+        <div style="width:40px; height:4px; background:#E2E8F0; border-radius:2px; margin:0 auto 24px;"></div>
+        <h3 style="font-size:17px; font-weight:700; margin-bottom:4px; color:#1A1A2E;">
+            <i class="fa-solid fa-hospital-user" style="color:#CE1126; margin-right:8px;"></i>Ajouter un nouveau patient
+        </h3>
+        <p style="font-size:12px; color:#9CA3AF; margin-bottom:20px;">Un identifiant unique sera généré automatiquement.</p>
+
+        <div style="display:flex; gap:12px; margin-bottom:14px;">
+            <div style="flex:1;">
+                <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Prénom *</label>
+                <input id="np-firstname" type="text" placeholder="Jean-Pierre"
+                    style="width:100%; padding:12px 14px; border:1px solid #E2E8F0; border-radius:10px; font-family:Inter,sans-serif; font-size:14px; outline:none; color:#1A1A2E;">
+            </div>
+            <div style="flex:1;">
+                <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Nom *</label>
+                <input id="np-lastname" type="text" placeholder="DUBOIS"
+                    style="width:100%; padding:12px 14px; border:1px solid #E2E8F0; border-radius:10px; font-family:Inter,sans-serif; font-size:14px; outline:none; color:#1A1A2E;">
+            </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Date de naissance *</label>
+            <input id="np-dob" type="date"
+                style="width:100%; padding:12px 14px; border:1px solid #E2E8F0; border-radius:10px; font-family:Inter,sans-serif; font-size:14px; outline:none; color:#1A1A2E;">
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Adresse *</label>
+            <input id="np-address" type="text" placeholder="12 Avenue de la Costa, Monaco"
+                style="width:100%; padding:12px 14px; border:1px solid #E2E8F0; border-radius:10px; font-family:Inter,sans-serif; font-size:14px; outline:none; color:#1A1A2E;">
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Photo (optionnelle)</label>
+            <div style="border:2px dashed #E2E8F0; border-radius:12px; padding:20px; text-align:center; cursor:pointer; position:relative;"
+                 onclick="document.getElementById('np-photo-input').click()">
+                <img id="np-photo-preview" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin:0 auto 8px;">
+                <i class="fa-solid fa-camera" id="np-photo-icon" style="color:#9CA3AF; font-size:24px; display:block; margin-bottom:6px;"></i>
+                <p id="np-photo-label" style="font-size:12px; color:#9CA3AF;">Cliquer pour ajouter une photo</p>
+                <input id="np-photo-input" type="file" accept="image/*" style="display:none;" onchange="previewPatientPhoto(this)">
+            </div>
+        </div>
+
+        <div id="np-result" style="display:none; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px;
+             padding:16px; margin-bottom:16px; text-align:center;">
+            <i class="fa-solid fa-check-circle" style="color:#10B981; font-size:24px; margin-bottom:8px; display:block;"></i>
+            <p style="font-weight:700; color:#1A1A2E; margin-bottom:4px;">Patient créé avec succès !</p>
+            <p style="font-size:12px; color:#6B7280; margin-bottom:8px;">Communiquez cet identifiant aux professionnels qui doivent suivre ce patient :</p>
+            <div id="np-generated-id" style="background:#CE1126; color:white; border-radius:8px; padding:10px 20px;
+                 font-family:monospace; font-size:22px; font-weight:800; letter-spacing:4px; display:inline-block;"></div>
+        </div>
+
+        <div id="np-error" style="display:none; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px; color:#EF4444; font-size:13px; margin-bottom:12px;"></div>
+
+        <button id="np-submit-btn" onclick="submitAddPatient()"
+            style="width:100%; padding:15px; background:linear-gradient(135deg,#CE1126,#FF2040); border:none;
+            border-radius:14px; color:white; font-family:Inter,sans-serif; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px;">
+            <i class="fa-solid fa-plus"></i> Créer le dossier patient
+        </button>
+        <button onclick="closeAddPatientModal()"
+            style="width:100%; padding:13px; background:none; border:1px solid #E2E8F0;
+            border-radius:14px; color:#6B7280; font-family:Inter,sans-serif; font-size:14px; cursor:pointer;">
+            Fermer
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL — AJOUTER UN PROFESSIONNEL (pour les familles)
+═══════════════════════════════════════════════════════════════ -->
+<div id="modal-add-pro" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     backdrop-filter:blur(6px); z-index:9000; align-items:flex-end; justify-content:center;">
+    <div style="background:#fff; border-radius:24px 24px 0 0; padding:28px 24px 40px;
+         width:100%; max-width:480px; box-shadow:0 -20px 60px rgba(0,0,0,0.2);">
+
+        <div style="width:40px; height:4px; background:#E2E8F0; border-radius:2px; margin:0 auto 24px;"></div>
+        <h3 style="font-size:17px; font-weight:700; margin-bottom:4px; color:#1A1A2E;">
+            <i class="fa-solid fa-user-doctor" style="color:#CE1126; margin-right:8px;"></i>Ajouter un professionnel de santé
+        </h3>
+        <p style="font-size:12px; color:#9CA3AF; margin-bottom:20px;">Entrez l'identifiant PRO qui vous a été communiqué par le professionnel.</p>
+
+        <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">Identifiant professionnel (PRO-XXX)</label>
+            <div style="position:relative;">
+                <i class="fa-solid fa-id-card" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#9CA3AF;"></i>
+                <input id="ap-pro-id" type="text" placeholder="Ex : PRO-001"
+                    style="width:100%; padding:12px 14px 12px 40px; border:1px solid #E2E8F0; border-radius:10px; font-family:Inter,sans-serif;
+                    font-size:15px; font-weight:700; letter-spacing:2px; text-transform:uppercase; outline:none; color:#1A1A2E;"
+                    oninput="this.value=this.value.toUpperCase()">
+            </div>
+        </div>
+
+        <button onclick="searchPro()"
+            style="width:100%; padding:13px; background:#F1F5F9; border:none; border-radius:12px;
+            color:#1A1A2E; font-family:Inter,sans-serif; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:16px;">
+            <i class="fa-solid fa-magnifying-glass"></i> Rechercher
+        </button>
+
+        <!-- Résultat de recherche -->
+        <div id="ap-found" style="display:none; background:#F8F9FA; border:1px solid #E2E8F0; border-radius:12px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:48px; height:48px; background:rgba(206,17,38,0.1); border-radius:12px;
+                     display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fa-solid fa-user-doctor" style="color:#CE1126;"></i>
+                </div>
+                <div>
+                    <p id="ap-name" style="font-weight:700; font-size:15px; color:#1A1A2E;"></p>
+                    <p id="ap-profession" style="font-size:12px; color:#6B7280; margin-top:2px;"></p>
+                </div>
+            </div>
+            <button onclick="confirmAddPro()"
+                style="width:100%; margin-top:14px; padding:12px; background:linear-gradient(135deg,#CE1126,#FF2040);
+                border:none; border-radius:12px; color:white; font-family:Inter,sans-serif; font-size:14px; font-weight:700; cursor:pointer;">
+                <i class="fa-solid fa-plus"></i> Ajouter ce professionnel à mon suivi
+            </button>
+        </div>
+
+        <div id="ap-not-found" style="display:none; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px; color:#EF4444; font-size:13px; margin-bottom:12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Aucun professionnel trouvé avec cet identifiant, ou le compte est inactif.
+        </div>
+
+        <div id="ap-success" style="display:none; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:12px; color:#10B981; font-size:13px; text-align:center; margin-bottom:12px;">
+            <i class="fa-solid fa-check-circle"></i> Professionnel ajouté à votre suivi avec succès !
+        </div>
+
+        <button onclick="closeAddProModal()"
+            style="width:100%; padding:13px; background:none; border:1px solid #E2E8F0;
+            border-radius:14px; color:#6B7280; font-family:Inter,sans-serif; font-size:14px; cursor:pointer;">
+            Fermer
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BOUTONS FLOTTANTS contextuels (FAB)
+═══════════════════════════════════════════════════════════════ -->
+<!-- FAB Pro : Ajouter un patient -->
+<button id="fab-add-patient" onclick="openAddPatientModal()"
+    style="display:none; position:fixed; bottom:88px; right:20px; z-index:800;
+    background:linear-gradient(135deg,#CE1126,#FF2040); color:white; border:none;
+    border-radius:50px; padding:14px 20px; font-family:Inter,sans-serif; font-size:13px;
+    font-weight:700; cursor:pointer; box-shadow:0 6px 24px rgba(206,17,38,0.4);
+    display:flex; align-items:center; gap:8px; transition:all .2s;"
+    title="Ajouter un nouveau patient">
+    <i class="fa-solid fa-hospital-user"></i> <span>Nouveau patient</span>
+</button>
+
+<!-- FAB Famille : Ajouter un professionnel -->
+<button id="fab-add-pro" onclick="openAddProModal()"
+    style="display:none; position:fixed; bottom:88px; right:20px; z-index:800;
+    background:linear-gradient(135deg,#10B981,#059669); color:white; border:none;
+    border-radius:50px; padding:14px 20px; font-family:Inter,sans-serif; font-size:13px;
+    font-weight:700; cursor:pointer; box-shadow:0 6px 24px rgba(16,185,129,0.4);
+    display:flex; align-items:center; gap:8px; transition:all .2s;"
+    title="Ajouter un professionnel à mon suivi">
+    <i class="fa-solid fa-user-doctor"></i> <span>Ajouter un pro</span>
+</button>
+
+<script>
+/* ═══════ LOGIQUE MODALS PATIENT & PRO ═══════════════════════ */
+
+// Afficher le bon FAB selon le rôle
+(function() {
+    const session = MonacoCare.getSession();
+    const urlRole = new URLSearchParams(window.location.search).get('role');
+    const role = session?.role || urlRole || '';
+
+    setTimeout(() => {
+        const isPro    = ['medecin','kine','infirmier','auxiliaire','pharmacien','specialiste','pro'].includes(role);
+        const isFamily = (role === 'family');
+        const fabPat   = document.getElementById('fab-add-patient');
+        const fabPro   = document.getElementById('fab-add-pro');
+        if (fabPat) fabPat.style.display = isPro    ? 'flex' : 'none';
+        if (fabPro) fabPro.style.display = isFamily ? 'flex' : 'none';
+    }, 300);
+})();
+
+// Also wire to existing role-select for demo mode
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('role-select');
+    if (sel) sel.addEventListener('change', () => {
+        const v = sel.value;
+        const isPro    = ['medecin','kine','auxiliaire'].includes(v);
+        const isFamily = v === 'family';
+        const fabPat   = document.getElementById('fab-add-patient');
+        const fabPro   = document.getElementById('fab-add-pro');
+        if (fabPat) fabPat.style.display = isPro    ? 'flex' : 'none';
+        if (fabPro) fabPro.style.display = isFamily ? 'flex' : 'none';
+    });
+});
+
+/* ─── Modal : Ajouter un patient ─────────────────────────── */
+function openAddPatientModal() {
+    const m = document.getElementById('modal-add-patient');
+    m.style.display = 'flex';
+    // Reset
+    ['np-firstname','np-lastname','np-dob','np-address'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('np-photo-input').value = '';
+    document.getElementById('np-photo-preview').style.display = 'none';
+    document.getElementById('np-photo-icon').style.display = 'block';
+    document.getElementById('np-photo-label').textContent = 'Cliquer pour ajouter une photo';
+    document.getElementById('np-result').style.display = 'none';
+    document.getElementById('np-error').style.display = 'none';
+    document.getElementById('np-submit-btn').style.display = 'block';
+}
+
+function closeAddPatientModal() {
+    document.getElementById('modal-add-patient').style.display = 'none';
+}
+
+function previewPatientPhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const preview = document.getElementById('np-photo-preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        document.getElementById('np-photo-icon').style.display = 'none';
+        document.getElementById('np-photo-label').textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+}
+
+function submitAddPatient() {
+    const firstName   = document.getElementById('np-firstname').value.trim();
+    const lastName    = document.getElementById('np-lastname').value.trim();
+    const dateOfBirth = document.getElementById('np-dob').value;
+    const address     = document.getElementById('np-address').value.trim();
+    const photoInput  = document.getElementById('np-photo-input');
+    const errEl       = document.getElementById('np-error');
+
+    errEl.style.display = 'none';
+
+    if (!firstName || !lastName) { errEl.style.display='block'; errEl.textContent='⚠️ Le prénom et le nom sont obligatoires.'; return; }
+    if (!dateOfBirth)            { errEl.style.display='block'; errEl.textContent='⚠️ La date de naissance est obligatoire.'; return; }
+    if (!address)                { errEl.style.display='block'; errEl.textContent="⚠️ L'adresse est obligatoire."; return; }
+
+    const photoFile = photoInput.files[0];
+    if (photoFile) {
+        const reader = new FileReader();
+        reader.onload = e => createPatientRecord({ firstName, lastName, dateOfBirth, address, photoUrl: e.target.result });
+        reader.readAsDataURL(photoFile);
+    } else {
+        createPatientRecord({ firstName, lastName, dateOfBirth, address, photoUrl: '' });
+    }
+}
+
+function createPatientRecord({ firstName, lastName, dateOfBirth, address, photoUrl }) {
+    const result = MonacoCare.admin.createPatient({ firstName, lastName, dateOfBirth, address, photoUrl });
+    document.getElementById('np-submit-btn').style.display = 'none';
+    document.getElementById('np-generated-id').textContent = result.patientId;
+    document.getElementById('np-result').style.display = 'block';
+}
+
+/* ─── Modal : Ajouter un professionnel ───────────────────── */
+let _foundProId = null;
+
+function openAddProModal() {
+    const m = document.getElementById('modal-add-pro');
+    m.style.display = 'flex';
+    document.getElementById('ap-pro-id').value = '';
+    document.getElementById('ap-found').style.display = 'none';
+    document.getElementById('ap-not-found').style.display = 'none';
+    document.getElementById('ap-success').style.display = 'none';
+    _foundProId = null;
+}
+
+function closeAddProModal() {
+    document.getElementById('modal-add-pro').style.display = 'none';
+}
+
+function searchPro() {
+    const proId = document.getElementById('ap-pro-id').value.trim().toUpperCase();
+    document.getElementById('ap-found').style.display = 'none';
+    document.getElementById('ap-not-found').style.display = 'none';
+    document.getElementById('ap-success').style.display = 'none';
+
+    const pro = MonacoCare.admin.findProfessional(proId);
+    if (pro) {
+        _foundProId = proId;
+        document.getElementById('ap-name').textContent = pro.name;
+        document.getElementById('ap-profession').textContent = pro.professionLabel || pro.specialty;
+        document.getElementById('ap-found').style.display = 'block';
+    } else {
+        document.getElementById('ap-not-found').style.display = 'block';
+    }
+}
+
+function confirmAddPro() {
+    if (!_foundProId) return;
+    // Associer ce pro au patient de la session
+    const session = MonacoCare.getSession();
+    const patientId = session?.patientId || 'patient-demo';
+    MonacoCare.admin.assignProToPatient(patientId, _foundProId);
+    document.getElementById('ap-found').style.display = 'none';
+    document.getElementById('ap-success').style.display = 'block';
+    _foundProId = null;
+}
+
+// Fermer modals en cliquant sur le fond
+['modal-add-patient','modal-add-pro'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+        if (e.target === document.getElementById(id)) {
+            document.getElementById(id).style.display = 'none';
+        }
+    });
+});
+</script>
+</body>
+</html>
