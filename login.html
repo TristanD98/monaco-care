@@ -66,20 +66,19 @@
         }
 
         .brand-logo {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, var(--monaco-red), #FF2040);
-            border-radius: 20px;
+            width: 110px;
+            height: 110px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 32px rgba(206,17,38,0.4);
+            margin-bottom: 12px;
+            filter: drop-shadow(0 8px 24px rgba(123,21,53,0.45));
         }
 
-        .brand-logo i {
-            font-size: 32px;
-            color: white;
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .brand h1 {
@@ -442,10 +441,11 @@
     <!-- Brand -->
     <div class="brand">
         <div class="brand-logo">
-            <i class="fa-solid fa-heart-pulse"></i>
+            <img src="logo.jpg" alt="Monaco Care" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+            <span style="display:none; width:100%; height:100%; background:linear-gradient(135deg,#7B1535,#590021); border-radius:20px; align-items:center; justify-content:center;"><i class="fa-solid fa-hands-holding-heart" style="font-size:36px; color:white;"></i></span>
         </div>
         <h1>Monaco Care</h1>
-        <p>Plateforme de soins coordonnés</p>
+        <p>Plateforme de coordination pour les personnes âgées</p>
     </div>
 
     <!-- Card -->
