@@ -420,9 +420,8 @@
                 roleSelect.dispatchEvent(new Event('change'));
             }
         } else if (!urlRole) {
-            // Pas de session et pas de paramètre role = rediriger vers login
-            // (Commenté pour permettre la démo directe sans login)
-            // window.location.href = 'login.html';
+            // Pas de session → rediriger vers login
+            window.location.href = 'login.html';
         }
     })();
     </script>
