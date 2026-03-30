@@ -352,7 +352,7 @@
                         <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px;">Gérez vos accès, vos bénéficiaires et votre abonnement en tant que compte principal (Aidant / Tuteur).</p>
 
                         <!-- Add Patient -->
-                        <div class="vault-section" style="text-align:left; margin-bottom:15px;">
+                        <div class="vault-section" id="settings-add-patient-section" style="text-align:left; margin-bottom:15px;">
                             <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-plus" style="color:var(--monaco-red);"></i> Ajouter un bénéficiaire / patient</h4>
                             <input type="text" id="new-patient-name" placeholder="Nom complet" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
                             <input type="text" id="new-patient-id" placeholder="N° Sécurité Sociale (optionnel)" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
@@ -360,7 +360,7 @@
                         </div>
 
                         <!-- Add Pro via ID -->
-                        <div class="vault-section" style="text-align:left; margin-bottom:15px;">
+                        <div class="vault-section" id="settings-add-pro-section" style="text-align:left; margin-bottom:15px;">
                             <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red);"></i> Ajouter un professionnel</h4>
                             <p style="font-size:11px; margin-bottom:10px; color:var(--text-muted);">Saisissez le N° d'identifiant unique fourni au professionnel lorsqu'il se connecte à l'application.</p>
                             <div style="display:flex; gap:8px;">
@@ -369,8 +369,16 @@
                             </div>
                         </div>
 
+                        <!-- Pending Invitations -->
+                        <div class="vault-section" id="settings-invitations-section" style="text-align:left; margin-bottom:15px;">
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-bell" style="color:var(--monaco-red);"></i> Demandes d'accès en attente</h4>
+                            <div id="pending-invitations-list" style="display:flex; flex-direction:column; gap:8px;">
+                                <p style="font-size:11px; color:var(--text-muted);">Aucune demande en attente.</p>
+                            </div>
+                        </div>
+
                         <!-- Subscription -->
-                        <div class="vault-section" style="text-align:left; margin-bottom:10px;">
+                        <div class="vault-section" id="settings-sub-section" style="text-align:left; margin-bottom:10px;">
                             <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-credit-card" style="color:var(--monaco-red);"></i> Abonnement Monaco Care</h4>
                             <div style="border:1px solid var(--silver-dark); border-radius:8px; padding:12px; margin-bottom:10px; background:var(--silver-light);">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">

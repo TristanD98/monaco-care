@@ -133,6 +133,43 @@ const MonacoCare = (() => {
         }
     }
 
+    // ── DEMANDE D'ACCÈS FAMILLE ─────────────────────────
+    async function requestFamilyAccess({ firstname, lastname, relation, phone, patientName, patientAddress }) {
+        try {
+            const id = 'REQ-FAM-' + Date.now();
+            await db.collection('pending_family_requests').doc(id).set({
+                id, firstname, lastname, relation, phone, patientName, patientAddress, status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true };
+        } catch(e) {
+            return { success: false, message: "Erreur lors de l'envoi de la demande. " + e.message };
+        }
+    }
+
+    // ── ACCOMPAGNANT ────────────────────────────────────
+    async function loginHelper(helperId, pin, remember) {
+        return await loginProfessional(helperId, pin, remember);
+    }
+
+    async function registerHelper({ firstName, lastName, profession, phone }) {
+        try {
+            const id = 'REG-ACC-' + Date.now();
+            const name = (firstName + ' ' + lastName).trim();
+            const email = `helper_${Date.now()}@monacocare.mc`; 
+            
+            await db.collection('pending_registrations').doc(id).set({
+                id, firstName, lastName, name, 
+                professionLabel: 'Accompagnant - ' + profession, 
+                phone, email, status: 'pending', role: 'helper',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true, registrationId: id };
+        } catch(e) {
+            return { success: false, message: "Erreur lors de l'envoi de la formulation. " + e.message };
+        }
+    }
+
     // ── ADMIN (Opérations Firestore) ────────────────────
     const admin = {
         async generateDemoCode(options = {}) {
@@ -280,5 +317,5 @@ const MonacoCare = (() => {
     }
     setTimeout(() => { seedDatabaseIfEmpty(); }, 3000);
 
-    return { validateDemoCode, loginProfessional, registerProfessional, setSession, getSession, clearSession, requireAuth, admin };
+    return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, admin };
 })();

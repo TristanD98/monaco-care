@@ -399,6 +399,32 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* Modal CGU */
+        .modal-overlay {
+            display: none;
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--monaco-surface);
+            border-radius: 20px;
+            width: 90%; max-width: 500px; max-height: 80vh;
+            padding: 24px;
+            overflow-y: auto;
+            color: rgba(255,255,255,0.9);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 16px;
+            background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+            width: 32px; height: 32px; color: white; cursor: pointer;
+        }
+        .modal-content h3 { color: white; margin-bottom: 16px; }
+        .modal-content p { font-size: 13px; line-height: 1.6; margin-bottom: 12px; color: rgba(255,255,255,0.7); }
+
         /* Footer */
         .login-footer {
             text-align: center;
@@ -448,14 +474,25 @@
                 </div>
                 <div class="role-btn-text">
                     Professionnel de santé
-                    <small>Connexion ou inscription sécurisée avec votre identifiant</small>
+                    <small>Médecin, IDE, Spécialiste avec historique</small>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.25); margin-left:auto;"></i>
+            </button>
+
+            <button class="role-btn" id="btn-helper" onclick="showStep('helper')">
+                <div class="role-icon pro" style="background: rgba(255,255,255,0.1);">
+                    <i class="fa-solid fa-hand-holding-heart"></i>
+                </div>
+                <div class="role-btn-text">
+                    Professionnel (Accompagnant)
+                    <small>Auxiliaire, Livraison... Ajout de constantes</small>
                 </div>
                 <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.25); margin-left:auto;"></i>
             </button>
         </div>
 
         <!-- STEP 2A: Accès Famille -->
-        <div id="step-family">
+        <div id="step-family" style="display:none;">
             <button class="back-link" onclick="showStep('choose')">
                 <i class="fa-solid fa-arrow-left"></i> Retour
             </button>
@@ -476,18 +513,23 @@
 
             <div class="checkbox-row" style="margin-top: 24px; margin-bottom: 16px;">
                 <input type="checkbox" id="family-consent">
-                <label for="family-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données de coordination soient stockées de manière sécurisée conformément à la réglementation.</label>
+                <label for="family-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données de coordination soient stockées de manière sécurisée conformément à la réglementation. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
             </div>
 
             <button class="btn-primary" id="btn-family-login" onclick="loginFamily()">
                 Accéder au dossier
             </button>
 
+            <div class="separator" style="margin: 20px 0;"><span>Vous n'avez pas de code ?</span></div>
+            <button class="btn-primary" style="background: rgba(255,255,255,0.1); color: white; box-shadow: none;" onclick="showStep('family-request')">
+                Demander un accès
+            </button>
+
             <div class="feedback" id="family-feedback"></div>
         </div>
 
         <!-- STEP 2B: Professionnel de santé -->
-        <div id="step-pro">
+        <div id="step-pro" style="display:none;">
             <button class="back-link" onclick="showStep('choose')">
                 <i class="fa-solid fa-arrow-left"></i> Retour
             </button>
@@ -571,7 +613,7 @@
 
                 <div class="checkbox-row" style="margin-top: 16px;">
                     <input type="checkbox" id="pro-consent">
-                    <label for="pro-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées dans le cadre de la plateforme de coordination Monaco Care.</label>
+                    <label for="pro-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées dans le cadre de la plateforme de coordination Monaco Care. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
                 </div>
 
                 <div class="separator" style="margin: 16px 0;"><span>Votre demande sera validée par l'administrateur</span></div>
@@ -582,6 +624,162 @@
 
                 <div class="feedback" id="pro-register-feedback"></div>
             </div>
+            </div>
+        </div>
+
+        <!-- STEP 2C: Demande d'accès direct Famille -->
+        <div id="step-family-request" style="display:none;">
+            <button class="back-link" onclick="showStep('family')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <p class="step-title">Demande d'accès</p>
+            <p style="font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:20px; line-height:1.5;">Remplissez ce formulaire si aucun professionnel ne vous a encore transmis de code.</p>
+
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1; margin-bottom:12px;">
+                    <label class="form-label">Votre Prénom</label>
+                    <input type="text" id="req-firstname" class="form-input" placeholder="Jean">
+                </div>
+                <div class="form-group" style="flex:1; margin-bottom:12px;">
+                    <label class="form-label">Votre Nom</label>
+                    <input type="text" id="req-lastname" class="form-input" placeholder="DUPONT">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Lien de parenté</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-people-arrows"></i>
+                    <input type="text" id="req-relation" class="form-input" placeholder="Ex: Fils, Fille, Conjoint...">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Votre Téléphone (pour vous contacter)</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-phone"></i>
+                    <input type="tel" id="req-phone" class="form-input" placeholder="06 XX XX XX XX">
+                </div>
+            </div>
+
+            <div class="separator" style="margin: 20px 0;"><span>Informations du Patient</span></div>
+
+            <div class="form-group">
+                <label class="form-label">Nom et Prénom du patient</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-bed"></i>
+                    <input type="text" id="req-patient-name" class="form-input" placeholder="Ex: Jacques DUPONT">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Adresse du patient (pour vérification)</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-location-dot"></i>
+                    <input type="text" id="req-patient-address" class="form-input" placeholder="Quartier, Bâtiment...">
+                </div>
+            </div>
+
+            <div class="checkbox-row" style="margin-top: 16px;">
+                <input type="checkbox" id="req-consent">
+                <label for="req-consent" style="font-size: 11px; line-height: 1.4;">Je certifie l'exactitude de ces informations et demande l'ouverture d'un dossier. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
+            </div>
+
+            <button class="btn-primary" id="btn-family-req" onclick="submitFamilyRequest()">
+                Envoyer la demande
+            </button>
+
+            <div class="feedback" id="req-feedback"></div>
+        </div>
+
+        <!-- STEP 2D: Professionnel (Accompagnant) -->
+        <div id="step-helper" style="display:none;">
+            <button class="back-link" onclick="showStep('choose')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <p class="step-title">Accompagnant</p>
+            <p style="font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:20px; line-height:1.5;">Espace réservé aux intervenants non-médicaux (Auxiliaire de vie, livraison...).</p>
+
+            <div class="pro-tabs">
+                <button class="pro-tab active" id="tab-helper-login" onclick="switchHelperTab('login')">Connexion</button>
+                <button class="pro-tab" id="tab-helper-register" onclick="switchHelperTab('register')">S'inscrire</button>
+            </div>
+
+            <!-- Connexion Accompagnant -->
+            <div id="helper-login-form">
+                <div class="form-group">
+                    <label class="form-label">Identifiant d'intervenant</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-id-badge"></i>
+                        <input type="text" id="helper-id-input" class="form-input"
+                            placeholder="Ex: PRO-102"
+                            autocomplete="username" autocapitalize="characters">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Code d'accès personnel</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="helper-pin-input" class="form-input"
+                            placeholder="••••••" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="helper-remember-me" checked>
+                    <label for="helper-remember-me">Rester connecté</label>
+                </div>
+
+                <button class="btn-primary" id="btn-helper-login" onclick="loginHelper()">
+                    Se connecter
+                </button>
+
+                <div class="feedback" id="helper-login-feedback"></div>
+            </div>
+
+            <!-- Inscription Accompagnant -->
+            <div id="helper-register-form" style="display:none;">
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="hreg-firstname" class="form-input" placeholder="Marie">
+                    </div>
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="hreg-lastname" class="form-input" placeholder="DUPONT">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Rôle (Métier)</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-briefcase"></i>
+                        <input type="text" id="hreg-profession" class="form-input" placeholder="Ex : Auxiliaire de vie">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-mobile"></i>
+                        <input type="tel" id="hreg-phone" class="form-input" placeholder="06 XX XX XX XX">
+                    </div>
+                </div>
+
+                <div class="checkbox-row" style="margin-top: 16px;">
+                    <input type="checkbox" id="hreg-consent">
+                    <label for="hreg-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
+                </div>
+
+                <button class="btn-primary" id="btn-helper-register" onclick="registerHelper()">
+                    Envoyer la demande
+                </button>
+
+                <div class="feedback" id="helper-register-feedback"></div>
+            </div>
         </div>
 
     </div><!-- /card -->
@@ -589,6 +787,22 @@
     <div class="login-footer">
         <a href="admin.html">Console d'administration</a> &nbsp;·&nbsp;
         Données protégées — Monaco Care © 2026
+    </div>
+</div>
+
+<!-- Modal CGU -->
+<div class="modal-overlay" id="terms-modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeTerms()"><i class="fa-solid fa-xmark"></i></button>
+        <h3>Conditions Générales et Consentement</h3>
+        <p><strong>1. Collecte et confidentialité</strong><br>
+        Les données collectées (informations médicales, constantes vitales, informations de coordination) sont strictement confidentielles. Elles ne sont partagées qu'entre les professionnels de santé, les accompagnants et la famille autorisée.</p>
+        <p><strong>2. Hébergement sécurisé</strong><br>
+        Monaco Care s'engage à traiter vos données dans le respect des normes européennes (RGPD) et monégasques (CCIN). Les informations sont hébergées sur une infrastructure Cloud sécurisée (Firebase).</p>
+        <p><strong>3. Droits d'accès et d'effacement</strong><br>
+        Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification et d'effacement de vos données. L'historique des constantes est conservé pour une durée maximale de 1 an. Vous pouvez révoquer l'accès d'un professionnel à tout moment depuis l'application.</p>
+        <p><strong>4. Cas des accompagnants non-médicaux</strong><br>
+        Les auxiliaires de vie et autres professionnels non-médicaux peuvent saisir des constantes à la demande du patient, mais n'ont pas un droit de regard sur l'historique médical complet, garantissant le secret médical absolu.</p>
     </div>
 </div>
 
@@ -604,10 +818,14 @@
         document.getElementById('step-choose').style.display = 'none';
         document.getElementById('step-family').style.display = 'none';
         document.getElementById('step-pro').style.display   = 'none';
+        document.getElementById('step-family-request').style.display = 'none';
+        document.getElementById('step-helper').style.display = 'none';
 
         if (step === 'choose') document.getElementById('step-choose').style.display = 'block';
         if (step === 'family') document.getElementById('step-family').style.display = 'block';
         if (step === 'pro')    document.getElementById('step-pro').style.display    = 'block';
+        if (step === 'family-request') document.getElementById('step-family-request').style.display = 'block';
+        if (step === 'helper') document.getElementById('step-helper').style.display = 'block';
 
         // Clear feedback
         document.querySelectorAll('.feedback').forEach(f => {
@@ -621,6 +839,25 @@
         document.getElementById('tab-register').classList.toggle('active', tab === 'register');
         document.getElementById('pro-login-form').style.display    = tab === 'login'    ? 'block' : 'none';
         document.getElementById('pro-register-form').style.display = tab === 'register' ? 'block' : 'none';
+    }
+
+    function switchHelperTab(tab) {
+        document.getElementById('tab-helper-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-helper-register').classList.toggle('active', tab === 'register');
+        document.getElementById('helper-login-form').style.display    = tab === 'login'    ? 'block' : 'none';
+        document.getElementById('helper-register-form').style.display = tab === 'register' ? 'block' : 'none';
+    }
+
+    function openTerms(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        document.getElementById('terms-modal').style.display = 'flex';
+    }
+
+    function closeTerms() {
+        document.getElementById('terms-modal').style.display = 'none';
     }
 
     /* ============================================================
@@ -808,6 +1045,120 @@
             setLoading('btn-pro-register', false, 'Envoyer ma demande d\'accès');
             showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur. Vérifiez votre connexion.');
             console.error('[MonacoCare] registerPro error:', err);
+        }
+    }
+
+    /* ============================================================
+       PARCOURS ACCOMPAGNANT — Connexion & Inscription
+    ============================================================ */
+    async function loginHelper() {
+        const proId = document.getElementById('helper-id-input').value.trim().toUpperCase();
+        const pin = document.getElementById('helper-pin-input').value.trim();
+        const remember = document.getElementById('helper-remember-me').checked;
+
+        if (!proId || !pin) {
+            showFeedback('helper-login-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Informations manquantes.');
+            return;
+        }
+
+        setLoading('btn-helper-login', true, 'Se connecter');
+
+        try {
+            const result = await MonacoCare.loginHelper(proId, pin, remember);
+            if (result.success) {
+                MonacoCare.setSession({
+                    role: 'helper',
+                    displayName: result.displayName || proId,
+                    proId: proId,
+                    remember: remember
+                });
+                showFeedback('helper-login-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Connexion réussie !');
+                setTimeout(() => window.location.href = 'index.html?role=helper', 1000);
+            } else {
+                setLoading('btn-helper-login', false, 'Se connecter');
+                showFeedback('helper-login-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message}`);
+            }
+        } catch (err) {
+            setLoading('btn-helper-login', false, 'Se connecter');
+            showFeedback('helper-login-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur de connexion.');
+        }
+    }
+
+    async function registerHelper() {
+        const firstName = document.getElementById('hreg-firstname').value.trim();
+        const lastName = document.getElementById('hreg-lastname').value.trim();
+        const profession = document.getElementById('hreg-profession').value.trim();
+        const phone = document.getElementById('hreg-phone').value.trim();
+        const consent = document.getElementById('hreg-consent').checked;
+
+        if (!firstName || !lastName || !profession || !phone || !consent) {
+            showFeedback('helper-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez remplir tous les champs et accepter les conditions.');
+            return;
+        }
+
+        setLoading('btn-helper-register', true, 'Envoi en cours...');
+
+        try {
+            const result = await MonacoCare.registerHelper({ firstName, lastName, profession, phone });
+            if (result.success) {
+                document.getElementById('helper-register-form').innerHTML = `
+                    <div style="text-align:center; padding:20px 0;">
+                        <i class="fa-solid fa-paper-plane" style="font-size:40px; color:#10B981; margin-bottom:16px;"></i>
+                        <p style="color:white; font-weight:700;">Demande envoyée !</p>
+                        <p style="color:rgba(255,255,255,0.7); font-size:13px;">L'équipe vous contactera sous peu.</p>
+                    </div>`;
+            } else {
+                setLoading('btn-helper-register', false, 'Envoyer la demande');
+                showFeedback('helper-register-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message}`);
+            }
+        } catch (err) {
+            setLoading('btn-helper-register', false, 'Envoyer la demande');
+            showFeedback('helper-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur lors de l\'envoi.');
+        }
+    }
+
+    /* ============================================================
+       DEMANDE D'ACCÈS FAMILLE
+    ============================================================ */
+    async function submitFamilyRequest() {
+        const firstname = document.getElementById('req-firstname').value.trim();
+        const lastname = document.getElementById('req-lastname').value.trim();
+        const relation = document.getElementById('req-relation').value.trim();
+        const phone = document.getElementById('req-phone').value.trim();
+        const patientName = document.getElementById('req-patient-name').value.trim();
+        const patientAddress = document.getElementById('req-patient-address').value.trim();
+        const consent = document.getElementById('req-consent').checked;
+
+        if (!firstname || !lastname || !relation || !phone || !patientName || !patientAddress) {
+            showFeedback('req-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez remplir tous les champs.');
+            return;
+        }
+        if (!consent) {
+            showFeedback('req-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Vous devez accepter les conditions.');
+            return;
+        }
+
+        setLoading('btn-family-req', true, 'Envoi en cours...');
+
+        try {
+            const result = await MonacoCare.requestFamilyAccess({
+                firstname, lastname, relation, phone, patientName, patientAddress
+            });
+            if (result.success) {
+                document.getElementById('step-family-request').innerHTML = `
+                    <button class="back-link" onclick="showStep('family')"><i class="fa-solid fa-arrow-left"></i> Retour</button>
+                    <div style="text-align:center; padding:40px 0;">
+                        <i class="fa-solid fa-check-circle" style="font-size:48px; color:#10B981; margin-bottom:16px;"></i>
+                        <p style="color:white; font-size:18px; font-weight:bold;">Demande enregistrée</p>
+                        <p style="color:rgba(255,255,255,0.7); line-height:1.5; margin-top:10px;">L'administrateur validera votre demande dans les plus brefs délais et vous contactera au ${phone}.</p>
+                    </div>`;
+            } else {
+                setLoading('btn-family-req', false, 'Envoyer la demande');
+                showFeedback('req-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message}`);
+            }
+        } catch (err) {
+            setLoading('btn-family-req', false, 'Envoyer la demande');
+            showFeedback('req-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Erreur. Impossible d\'envoyer la demande.');
         }
     }
 </script>

@@ -88,11 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Manage "MEDICAL_ONLY" Posts & Vault Access
-        if(role === 'family' || role === 'auxiliaire') {
+        if(role === 'auxiliaire' || role === 'pro') {
             medicalPosts.forEach(post => post.style.display = 'none'); // Hide doctor notes
-            // Family/Auxiliaire shouldn't even see the vault, but for demo we lock it
-            bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale Nécessaire.";
+            bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale / Famille Nécessaire.";
             simulateBioBtn.style.display = 'none';
+        } else if (role === 'family') {
+            medicalPosts.forEach(post => post.style.display = 'flex');
+            bioOverlay.querySelector('p').innerText = "Accès sécurisé Famille via Face ID / Empreinte.";
+            simulateBioBtn.style.display = 'inline-block';
         } else {
             medicalPosts.forEach(post => post.style.display = 'flex');
             bioOverlay.querySelector('p').innerText = "Accès réservé au personnel médical via Face ID / Empreinte.";
@@ -447,10 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* --- NEW PAIN & VITALS LOGIC --- */
+
     const addVitalsBtn = document.getElementById('add-vitals-btn');
     if(addVitalsBtn) {
         addVitalsBtn.addEventListener('click', () => {
-            if(roleSelect.value === 'family' || roleSelect.value === 'auxiliaire') {
+            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
                 alert("Erreur de droits : Impossible d'ajouter des constantes.");
                 return;
             }
@@ -460,6 +464,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!bloodPress) return;
             const temperature = prompt("Saisir la Température (°C, ex: 37.2) :");
             if(!temperature) return;
+
+            // Sauvegarde dans Firebase
+            const session = MonacoCare.getSession();
+            const patientId = session?.patientId || 'patient-demo';
+            const reporterName = session?.displayName || session?.proId || "Utilisateur Démo";
+            const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+
+            if (MonacoCare.admin && MonacoCare.admin.addVital) {
+                MonacoCare.admin.addVital(patientId, {
+                    heartRate, bloodPress, temperature, reporterName, reporterRole: roleName
+                });
+            }
 
             const tempNum = parseFloat(temperature.replace(',', '.'));
             const tempStatus = tempNum >= 38.0 ? 'red' :
@@ -504,8 +520,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(openPainModalBtn) {
         openPainModalBtn.addEventListener('click', () => {
-            if(roleSelect.value === 'family' || roleSelect.value === 'auxiliaire') {
-                alert("Erreur de droits : Seul le personnel médical qualifié peut ajouter une évaluation clinique.");
+            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
+                alert("Erreur de droits : Seul le personnel médical ou la famille qualifiée peut ajouter une évaluation.");
                 return;
             }
             addPainModal.classList.remove('hidden');
@@ -705,8 +721,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     historyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            if(roleSelect.value === 'family' || roleSelect.value === 'auxiliaire') {
-                alert("Accès refusé. Historique réservé au corps médical.");
+            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
+                alert("Accès refusé. Historique réservé au corps médical et à la famille.");
             } else {
                 currentMetric = btn.getAttribute('data-metric');
                 // Nettoyer text metrics if necessary
@@ -767,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(dictateBtn) {
         dictateBtn.addEventListener('click', () => {
-            if(roleSelect.value === 'family' || roleSelect.value === 'auxiliaire') {
+            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
                 alert("Permission refusée.");
                 return;
             }
@@ -780,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(typeBtn) {
         typeBtn.addEventListener('click', () => {
-            if(roleSelect.value === 'family' || roleSelect.value === 'auxiliaire') {
+            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
                 alert("Permission refusée.");
                 return;
             }
@@ -855,9 +871,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle settings modal
     if (settingsBtn && settingsModal) {
         settingsBtn.addEventListener('click', () => {
-            // Check if current role is 'family' / caregiver, as they manage the account
-            if (roleSelect.value !== 'family') {
-                alert("Attention : En temps normal, cette vue est réservée à l'aidant / tuteur gérant le compte principal. C'est ici qu'elle ajoute des professionnels.");
+            const role = roleSelect.value;
+            const secPatient = document.getElementById('settings-add-patient-section');
+            const secPro = document.getElementById('settings-add-pro-section');
+            const secSub = document.getElementById('settings-sub-section');
+            const secInv = document.getElementById('settings-invitations-section');
+            const invList = document.getElementById('pending-invitations-list');
+
+            if (role === 'family') {
+                if(secPatient) secPatient.style.display = 'block';
+                if(secPro) secPro.style.display = 'block';
+                if(secSub) secSub.style.display = 'block';
+                if(secInv) secInv.style.display = 'block';
+                invList.innerHTML = `
+                    <div style="background:#F8F9FA; border:1px solid #E2E8F0; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <p style="font-size:13px; font-weight:600; color:#1A1A2E;">Dr. Sarah (Médecin)</p>
+                            <p style="font-size:11px; color:#6B7280;">Demande l'accès au dossier</p>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button style="background:#10B981; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Accès accordé au Dr. Sarah.');"><i class="fa-solid fa-check"></i></button>
+                            <button style="background:#EF4444; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Demande refusée.');"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                if(secPatient) secPatient.style.display = 'block';
+                if(secPro) secPro.style.display = 'none';
+                if(secSub) secSub.style.display = 'none';
+                if(secInv) secInv.style.display = 'block';
+                invList.innerHTML = `
+                    <div style="background:#F8F9FA; border:1px solid #E2E8F0; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <p style="font-size:13px; font-weight:600; color:#1A1A2E;">Famille DUBOIS</p>
+                            <p style="font-size:11px; color:#6B7280;">Vous invite à suivre Jean-Pierre</p>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button style="background:#10B981; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Invitation de la Famille DUBOIS acceptée.');"><i class="fa-solid fa-check"></i></button>
+                            <button style="background:#EF4444; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Invitation refusée.');"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                `;
             }
             settingsModal.classList.remove('hidden');
         });
