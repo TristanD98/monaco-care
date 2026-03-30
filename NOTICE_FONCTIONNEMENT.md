@@ -24,7 +24,8 @@ C'est le professionnel de santé (ou l'administrateur) qui, au moment où la pri
 Une fois connectée, la famille a une **vue restreinte et simplifiée** :
 - Le **Flux (Fil d'actualité)** : Elle voit les messages postés par l'équipe soignante (ex: *"La douche s'est bien passée ce matin"*).
 - **L'équipe soignante** : La liste des professionnels assignés à sa mère/père, avec la possibilité de les appeler.
-- **Le Coffre Médical est CACHÉ** : Les constantes vitales (Tension, Pouls), les ordonnances et la douleur sont des données médicales strictes, réservées uniquement aux professionnels.
+- **Le Coffre Médical (Nouveauté)** : La famille peut désormais rentrer de nouvelles constantes (fièvre, pouls) au domicile et partager ça avec les médecins.
+- **Gérer les Accès Réciproques** : Dans ses "Paramètres", la famille peut voir un onglet de "Demandes d'Accès". Si un médecin veut le dossier du patient parent, il envoie une demande et la famille l'approuve d'un clic !
 
 ---
 
@@ -47,6 +48,9 @@ Une fois la demande validée par l'administrateur (voir partie 3 ci-dessous), le
 1. Il retourne sur la page de connexion, onglet **"Connexion"**.
 2. Il saisit `PRO-002` et son code secret.
 3. Il accède alors à **tous les patients qui lui sont assignés**, peut rentrer des constantes vitales dans le Coffre, et écrire dans le flux des familles.
+
+### D. Cas du 3ème Profil : L'Accompagnant (Non-Médical)
+Si l'intervenant choisit un profil non médical à l'inscription (Aide à Domicile, Nettoyage, etc.), son parcours sera similaire, mais ses droits et accès seront **bloqués au niveau du Coffre Médical**. Il ne verra QUE le Flux pour reporter ses heures ou anecdotes ("*Le repas a été pris*"), garantissant ainsi le secret médical.
 
 ---
 

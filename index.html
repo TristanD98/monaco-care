@@ -159,18 +159,10 @@
                                     <h3 style="margin-bottom:0;">Constantes (10:11 AM)</h3>
                                     <button class="history-btn" data-metric="Constantes Vitales"><i class="fa-solid fa-chart-area"></i> Historique</button>
                                 </div>
-                                <div class="vitals-grid">
-                                    <div class="vital-card red">
-                                        <div class="vital-icon"><i class="fa-solid fa-heart-pulse"></i> Tension Art.</div>
-                                        <div class="vital-value" style="margin:5px 0;">138/84<span>mmHg</span></div>
-                                        <div class="vital-graph"><i class="fa-solid fa-chart-line"></i></div>
-                                        <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à 09:42</div>
-                                    </div>
-                                    <div class="vital-card silver">
-                                        <div class="vital-icon"><i class="fa-solid fa-droplet"></i> SpO2</div>
-                                        <div class="vital-value" style="margin:5px 0;">97<span>%</span></div>
-                                        <div class="vital-graph stable">Normal</div>
-                                        <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à 10:05</div>
+                                <div class="vitals-grid" id="vitals-grid-container">
+                                    <div style="grid-column:1/-1; text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                                        <i class="fa-regular fa-chart-bar" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                        Aucune constante enregistrée.
                                     </div>
                                 </div>
                                 <button class="add-btn" id="add-vitals-btn" style="margin-top: 15px;"><i class="fa-solid fa-notes-medical"></i> Saisir de nouvelles constantes</button>
@@ -181,22 +173,10 @@
                                     <h3 style="margin-bottom:0;">Évaluations de la Douleur</h3>
                                     <button class="history-btn" data-metric="Échelle de Douleur"><i class="fa-solid fa-chart-area"></i> Historique</button>
                                 </div>
-                                <div class="pain-trackers">
-                                    <div class="pain-card">
-                                        <div class="pain-header">
-                                            <span>Générale</span>
-                                            <span class="pain-score">4/10</span>
-                                        </div>
-                                        <div class="pain-bar val-4"></div>
-                                        <div class="pain-time"><i class="fa-regular fa-clock"></i> Pris ce matin (08:15)</div>
-                                    </div>
-                                    <div class="pain-card">
-                                        <div class="pain-header">
-                                            <span>Épaule Gauche</span>
-                                            <span class="pain-score">6/10</span>
-                                        </div>
-                                        <div class="pain-bar val-6"></div>
-                                        <div class="pain-time"><i class="fa-regular fa-clock"></i> Hier (18:00)</div>
+                                <div class="pain-trackers" id="pain-trackers-container">
+                                    <div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                                        <i class="fa-regular fa-face-smile" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                        Aucune évaluation enregistrée.
                                     </div>
                                 </div>
                                 <button class="add-btn" id="open-pain-modal-btn"><i class="fa-solid fa-plus-circle"></i> Ajouter localisation</button>
@@ -205,9 +185,9 @@
                             <div class="vault-section">
                                 <h3>Notes Cliniques</h3>
                                 <div id="clinical-notes-container" style="display:flex; flex-direction:column; gap:10px;">
-                                    <div class="clinical-note">
-                                        <strong>Hier, 15:45 - Dr. Sarah</strong>
-                                        <p>Patient calme. Rythme cardiaque régulier. Les douleurs à l'épaule s'estompent sous traitement local.</p>
+                                    <div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                                        <i class="fa-regular fa-note-sticky" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                        Aucune note clinique pour le moment.
                                     </div>
                                 </div>
                             </div>
@@ -225,19 +205,12 @@
                             <h3>Conversations du patient</h3>
                             <button id="new-chat-btn" class="icon-btn"><i class="fa-solid fa-pen-to-square"></i></button>
                         </div>
-                        <div class="chat-list">
+                        <div class="chat-list" id="chat-list-container">
                             <div class="chat-item" data-chat="global">
                                 <div class="chat-avatar group"><i class="fa-solid fa-users-medical"></i></div>
                                 <div class="chat-content">
-                                    <div class="chat-title-row"><h4>Équipe Médicale Globale</h4><span class="time">10:30</span></div>
-                                    <p><b>Marc:</b> Séance terminée. La mobilité...</p>
-                                </div>
-                            </div>
-                            <div class="chat-item" data-chat="assistant">
-                                <div class="chat-avatar assist"><i class="fa-solid fa-clipboard-user"></i></div>
-                                <div class="chat-content">
-                                    <div class="chat-title-row"><h4>Assistante (Médicaments)</h4><span class="time">Hier</span></div>
-                                    <p>N'oubliez pas les cachets après le repas.</p>
+                                    <div class="chat-title-row"><h4>Équipe Médicale Globale</h4></div>
+                                    <p style="color:var(--text-muted); font-style:italic;">Aucun message pour l'instant.</p>
                                 </div>
                             </div>
                         </div>
@@ -347,7 +320,7 @@
                     <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <h3 style="margin:0;">Paramètres du Compte</h3>
-                            <button id="close-settings-modal" class="icon-btn" style="padding:0; font-size:16px; color:var(--text-dark);"><i class="fa-solid fa-xmark"></i></button>
+                            <button id="close-settings-modal" class="icon-btn" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark);"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px;">Gérez vos accès, vos bénéficiaires et votre abonnement en tant que compte principal (Aidant / Tuteur).</p>
 
