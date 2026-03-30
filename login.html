@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --monaco-red: #CE1126;
-            --monaco-red-dark: #A50D1E;
-            --monaco-red-light: rgba(206,17,38,0.1);
+            --monaco-red: #7B1535;
+            --monaco-red-dark: #590021;
+            --monaco-red-light: rgba(123,21,53,0.1);
             --white: #ffffff;
-            --off-white: #F8F9FA;
-            --text-dark: #1A1A2E;
-            --text-muted: #6B7280;
-            --silver-dark: #E2E8F0;
-            --silver-light: #F1F5F9;
+            --off-white: #fdf8f9;
+            --text-dark: #1c1b1c;
+            --text-muted: #564245;
+            --outline: #897174;
+            --silver-dark: #dcc0c3;
+            --silver-light: #f7f2f3;
             --success: #10B981;
             --warning: #F59E0B;
         }
@@ -71,13 +72,11 @@
 
         /* Card */
         .card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: white;
+            border: 1px solid #dcc0c3;
             border-radius: 24px;
             padding: 32px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 40px rgba(89,0,33,0.1);
         }
 
         /* Role Selector — Step 1 */
@@ -88,14 +87,14 @@
         .step-title {
             font-size: 18px;
             font-weight: 700;
-            color: white;
+            color: var(--text-dark);
             margin-bottom: 8px;
             text-align: center;
         }
 
         .step-subtitle {
             font-size: 13px;
-            color: rgba(255,255,255,0.5);
+            color: var(--text-muted);
             text-align: center;
             margin-bottom: 24px;
             line-height: 1.6;
@@ -104,10 +103,10 @@
         .role-btn {
             width: 100%;
             padding: 18px 20px;
-            border: 1px solid rgba(255,255,255,0.12);
+            border: 1px solid var(--silver-dark);
             border-radius: 16px;
-            background: rgba(255,255,255,0.06);
-            color: white;
+            background: var(--silver-light);
+            color: var(--text-dark);
             font-family: 'Inter', sans-serif;
             font-size: 15px;
             font-weight: 600;
@@ -120,8 +119,8 @@
         }
 
         .role-btn:hover {
-            background: rgba(206,17,38,0.2);
-            border-color: rgba(206,17,38,0.5);
+            background: var(--monaco-red-light);
+            border-color: rgba(123,21,53,0.3);
             transform: translateY(-1px);
         }
 
@@ -138,8 +137,8 @@
             flex-shrink: 0;
         }
 
-        .role-icon.family { background: rgba(16,185,129,0.2); color: #10B981; }
-        .role-icon.pro { background: rgba(206,17,38,0.2); color: var(--monaco-red); }
+        .role-icon.family { background: rgba(16,185,129,0.15); color: #059669; }
+        .role-icon.pro { background: var(--monaco-red-light); color: var(--monaco-red); }
 
         .role-btn-text {
             text-align: left;
@@ -150,13 +149,13 @@
             display: block;
             font-size: 11px;
             font-weight: 400;
-            color: rgba(255,255,255,0.45);
+            color: var(--outline);
             margin-top: 2px;
         }
 
         .role-btn-text .chevron {
             margin-left: auto;
-            color: rgba(255,255,255,0.3);
+            color: var(--outline);
             font-size: 12px;
         }
 
@@ -168,8 +167,8 @@
         .form-label {
             display: block;
             font-size: 12px;
-            font-weight: 600;
-            color: rgba(255,255,255,0.6);
+            font-weight: 700;
+            color: var(--text-muted);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -178,21 +177,21 @@
         .form-input {
             width: 100%;
             padding: 14px 16px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
+            background: var(--silver-light);
+            border: 1px solid var(--silver-dark);
             border-radius: 12px;
-            color: white;
+            color: var(--text-dark);
             font-family: 'Inter', sans-serif;
             font-size: 15px;
             transition: all 0.2s ease;
             outline: none;
         }
 
-        .form-input::placeholder { color: rgba(255,255,255,0.25); }
+        .form-input::placeholder { color: var(--outline); }
         .form-input:focus {
             border-color: var(--monaco-red);
-            background: rgba(206,17,38,0.08);
-            box-shadow: 0 0 0 3px rgba(206,17,38,0.15);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(123,21,53,0.1);
         }
 
         .input-group {
@@ -204,7 +203,7 @@
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: rgba(255,255,255,0.3);
+            color: var(--outline);
             font-size: 14px;
         }
 
@@ -223,7 +222,7 @@
         /* Tabs */
         .pro-tabs {
             display: flex;
-            background: rgba(255,255,255,0.06);
+            background: var(--silver-light);
             border-radius: 12px;
             padding: 4px;
             margin-bottom: 24px;
@@ -236,7 +235,7 @@
             border: none;
             border-radius: 9px;
             background: transparent;
-            color: rgba(255,255,255,0.5);
+            color: var(--outline);
             font-family: 'Inter', sans-serif;
             font-size: 13px;
             font-weight: 600;
@@ -247,7 +246,7 @@
         .pro-tab.active {
             background: var(--monaco-red);
             color: white;
-            box-shadow: 0 4px 12px rgba(206,17,38,0.3);
+            box-shadow: 0 4px 12px rgba(123,21,53,0.3);
         }
 
         /* Primary Button */
@@ -285,7 +284,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: rgba(255,255,255,0.4);
+            color: var(--outline);
             font-size: 13px;
             cursor: pointer;
             margin-bottom: 20px;
@@ -295,7 +294,7 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .back-link:hover { color: rgba(255,255,255,0.7); }
+        .back-link:hover { color: var(--text-dark); }
 
         /* Demo code hint */
         .code-hint {
@@ -309,9 +308,9 @@
             gap: 10px;
         }
 
-        .code-hint i { color: #10B981; font-size: 14px; margin-top: 2px; flex-shrink: 0; }
-        .code-hint p { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.5; }
-        .code-hint strong { color: rgba(255,255,255,0.85); }
+        .code-hint i { color: #059669; font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+        .code-hint p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .code-hint strong { color: var(--text-dark); }
 
         /* Checkbox */
         .checkbox-row {
@@ -330,7 +329,7 @@
 
         .checkbox-row label {
             font-size: 13px;
-            color: rgba(255,255,255,0.55);
+            color: var(--text-muted);
             cursor: pointer;
         }
 
@@ -348,15 +347,15 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: rgba(255,255,255,0.1);
+            background: var(--silver-dark);
         }
 
         .separator span {
             position: relative;
-            background: transparent;
+            background: white;
             padding: 0 12px;
             font-size: 12px;
-            color: rgba(255,255,255,0.3);
+            color: var(--outline);
         }
 
         /* Feedback */
