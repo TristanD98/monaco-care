@@ -474,8 +474,13 @@
                     autocomplete="off" autocapitalize="characters" spellcheck="false">
             </div>
 
+            <div class="checkbox-row" style="margin-top: 24px; margin-bottom: 16px;">
+                <input type="checkbox" id="family-consent">
+                <label for="family-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données de coordination soient stockées de manière sécurisée conformément à la réglementation.</label>
+            </div>
+
             <button class="btn-primary" id="btn-family-login" onclick="loginFamily()">
-                Accéder à la démo
+                Accéder au dossier
             </button>
 
             <div class="feedback" id="family-feedback"></div>
@@ -564,7 +569,12 @@
                     </div>
                 </div>
 
-                <div class="separator"><span>Votre demande sera validée par l'administrateur</span></div>
+                <div class="checkbox-row" style="margin-top: 16px;">
+                    <input type="checkbox" id="pro-consent">
+                    <label for="pro-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées dans le cadre de la plateforme de coordination Monaco Care.</label>
+                </div>
+
+                <div class="separator" style="margin: 16px 0;"><span>Votre demande sera validée par l'administrateur</span></div>
 
                 <button class="btn-primary" id="btn-pro-register" onclick="registerPro()">
                     Envoyer ma demande d'accès
@@ -582,6 +592,9 @@
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
     /* ============================================================
@@ -649,13 +662,18 @@
     ============================================================ */
     async function loginFamily() {
         const code = document.getElementById('family-code-input').value.trim().toUpperCase();
+        const consent = document.getElementById('family-consent').checked;
 
         if (!code || code.length < 4) {
             showFeedback('family-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez saisir votre code d\'accès.');
             return;
         }
+        if (!consent) {
+            showFeedback('family-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Vous devez accepter les conditions pour continuer.');
+            return;
+        }
 
-        setLoading('btn-family-login', true, 'Accéder à la démo');
+        setLoading('btn-family-login', true, 'Accéder au dossier');
 
         try {
             // Vérification du code dans Firebase Firestore (ou localStorage en mode démo)
@@ -754,8 +772,14 @@
             showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Veuillez décrire votre profession ou rôle.');
             return;
         }
+        const consent = document.getElementById('pro-consent').checked;
+
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Adresse e-mail invalide.');
+            return;
+        }
+        if (!consent) {
+            showFeedback('pro-register-feedback', 'error', '<i class="fa-solid fa-triangle-exclamation"></i> Vous devez accepter les conditions pour continuer.');
             return;
         }
 
