@@ -975,7 +975,7 @@
                 showFeedback('pro-login-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Connexion réussie ! Redirection...');
 
                 setTimeout(() => {
-                    window.location.href = 'index.html?role=' + (result.specialty || 'pro');
+                    window.location.href = 'patients.html';
                 }, 1000);
 
             } else {
@@ -1071,7 +1071,7 @@
                     remember: remember
                 });
                 showFeedback('helper-login-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Connexion réussie !');
-                setTimeout(() => window.location.href = 'index.html?role=helper', 1000);
+                setTimeout(() => window.location.href = 'patients.html', 1000);
             } else {
                 setLoading('btn-helper-login', false, 'Se connecter');
                 showFeedback('helper-login-feedback', 'error', `<i class="fa-solid fa-triangle-exclamation"></i> ${result.message}`);

@@ -88,18 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Manage "MEDICAL_ONLY" Posts & Vault Access
+        const stnBtn = document.getElementById('settings-btn');
         if(role === 'auxiliaire' || role === 'pro') {
             medicalPosts.forEach(post => post.style.display = 'none'); // Hide doctor notes
             bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale / Famille Nécessaire.";
             simulateBioBtn.style.display = 'none';
+            if(stnBtn) stnBtn.style.display = 'none';
         } else if (role === 'family') {
             medicalPosts.forEach(post => post.style.display = 'flex');
             bioOverlay.querySelector('p').innerText = "Accès sécurisé Famille via Face ID / Empreinte.";
             simulateBioBtn.style.display = 'inline-block';
+            if(stnBtn) stnBtn.style.display = 'flex';
         } else {
             medicalPosts.forEach(post => post.style.display = 'flex');
             bioOverlay.querySelector('p').innerText = "Accès réservé au personnel médical via Face ID / Empreinte.";
             simulateBioBtn.style.display = 'inline-block';
+            if(stnBtn) stnBtn.style.display = 'none';
         }
     };
 

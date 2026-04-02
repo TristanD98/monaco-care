@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Care - Mes Patients</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=2">
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body>
+    <div class="demo-wrapper">
+        <div class="phone">
+            <div class="notch"></div>
+            <div class="app-container" style="background-color: var(--off-white);">
+                
+                <header class="patient-header" style="justify-content: space-between; align-items: center; padding-bottom: 20px;">
+                    <div>
+                        <h2 style="font-size: 20px; font-weight: 700;">Mes Patients</h2>
+                        <p id="pro-name-display" style="font-size: 13px; opacity: 0.8;">Chargement...</p>
+                    </div>
+                    <button class="icon-btn" onclick="logout()" style="color: white; font-size: 18px;"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                </header>
+
+                <div style="padding: 20px; flex: 1; overflow-y: auto;">
+                    <div id="patients-list" style="display:flex; flex-direction:column; gap:15px;">
+                        <!-- Les patients seront injectés ici par le JS -->
+                    </div>
+
+                    <button class="modal-btn" onclick="document.getElementById('modal-add-patient').classList.remove('hidden')" style="margin-top: 25px; border-radius:12px; font-weight:600; font-size:14px; background:white; color:var(--monaco-red); border:1px solid #dcc0c3; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                        <i class="fa-solid fa-plus" style="margin-right:8px;"></i> Ajouter un patient
+                    </button>
+                </div>
+
+                <div class="home-indicator"></div>
+            </div>
+            
+            <!-- MODAL ADD PATIENT / INVITATION -->
+            <div id="modal-add-patient" class="modal hidden" style="z-index: 2000;">
+                <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-bottom: 15px;">Ajouter un patient</h3>
+                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:20px; line-height:1.5;">Vous pouvez accepter une invitation reçue par la famille, ou créer un dossier manuellement.</p>
+                    
+                    <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; margin-bottom: 15px; background:var(--silver-light); text-align:left;">
+                        <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-envelope-open-text" style="color:var(--monaco-red);"></i> Accepter une invitation</h4>
+                        <input type="text" id="invitation-code" placeholder="Code d'invitation (Ex: INV-1234)" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
+                        <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px;">Valider le code</button>
+                    </div>
+
+                    <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; background:var(--silver-light); text-align:left;">
+                        <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-folder-plus" style="color:var(--monaco-red);"></i> Créer un nouveau dossier</h4>
+                        <input type="text" id="new-patient-name" placeholder="Nom et Prénom" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
+                        <button class="modal-btn" onclick="createPatient()" style="margin:0; padding:10px; font-size:13px; background:white; color:var(--text-dark); border:1px solid var(--silver-dark);">Créer le dossier</button>
+                    </div>
+
+                    <button class="modal-btn cancel" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="margin-top: 15px; margin-bottom: 0;">Fermer</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            if(window.MonacoCare) {
+                window.MonacoCare.clearSession();
+            } else {
+                localStorage.removeItem('mc_session');
+            }
+            window.location.href = 'login.html';
+        }
+
+        function acceptInvitation() {
+            alert('En développement : Validation de l\'invitation en attente.');
+            document.getElementById('modal-add-patient').classList.add('hidden');
+            loadPatients();
+        }
+
+        function createPatient() {
+            const name = document.getElementById('new-patient-name').value;
+            if(!name) { alert('Veuillez entrer un nom.'); return; }
+            alert('Dossier ' + name + ' créé avec succès.');
+            document.getElementById('modal-add-patient').classList.add('hidden');
+            // Fake add to session or DB depending on logic
+            loadPatients();
+        }
+
+        function selectPatient(patientId, patientName) {
+            // Save selection to pass to index.html
+            const session = JSON.parse(localStorage.getItem('mc_session'));
+            if(session) {
+                session.patientId = patientId;
+                session.patientName = patientName;
+                session.patientInfo = "ID: " + patientId;
+                localStorage.setItem('mc_session', JSON.stringify(session));
+            }
+            window.location.href = 'index.html?patientId=' + patientId;
+        }
+
+        function loadPatients() {
+            const list = document.getElementById('patients-list');
+            // For now, load default demo patients
+            list.innerHTML = `
+                <div class="patient-card" onclick="selectPatient('45987301', 'Jean-Pierre DUBOIS')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s;">
+                    <img src="https://i.pravatar.cc/150?u=jeanpierre" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+                    <div style="flex:1;">
+                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">Jean-Pierre DUBOIS</h4>
+                        <p style="font-size:12px; color:#6B7280;">Dernière act. il y a 2h</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
+                </div>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessionData = localStorage.getItem('mc_session');
+            if(!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const session = JSON.parse(sessionData);
+            
+            // Si c'est une famille, envoyer directement sur index.html (ils ne gèrent pas de liste)
+            if(session.role === 'family' || session.role === 'particulier') {
+                window.location.href = 'index.html';
+            }
+
+            // Afficher le nom
+            const nameEl = document.getElementById('pro-name-display');
+            if(nameEl) {
+                nameEl.textContent = (session.displayName || session.proId || 'Professionnel') + ' (' + session.role + ')';
+            }
+
+            loadPatients();
+        });
+    </script>
+</body>
+</html>
