@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const roleSelect = document.getElementById('role-select');
     
     // Core Tabs & Views Navigation
-    const tabs = document.querySelectorAll('.tabs .tab');
+    const tabs = document.querySelectorAll('.bottom-nav .nav-btn');
     const views = document.querySelectorAll('.views-container .view');
     
     // Flux Monaco Elements
@@ -122,8 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Reset vault lock if user leaves the tab
-    document.querySelector('.tab[data-target="flux-view"]').addEventListener('click', lockVault);
-    document.querySelector('.tab[data-target="chat-list-view"]').addEventListener('click', lockVault);
+    document.querySelector('.nav-btn[data-target="flux-view"]').addEventListener('click', lockVault);
+    document.querySelector('.nav-btn[data-target="chat-list-view"]').addEventListener('click', lockVault);
     function lockVault() {
         if(vaultUnlocked) {
             bioOverlay.classList.remove('hidden');

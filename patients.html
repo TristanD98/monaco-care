@@ -92,17 +92,19 @@
         }
 
         function acceptInvitation() {
-            alert('En développement : Validation de l\'invitation en attente.');
+            const name = document.getElementById('invitation-code').value;
+            if(!name) { alert('Veuillez entrer un code de bénéficiaire.'); return; }
+            alert('Demande d\'accès envoyée au dossier ' + name + ' avec succès.');
             document.getElementById('modal-add-patient').classList.add('hidden');
-            loadPatients();
-        }
-
-        function createPatient() {
-            const name = document.getElementById('new-patient-name').value;
-            if(!name) { alert('Veuillez entrer un nom.'); return; }
-            alert('Dossier ' + name + ' créé avec succès.');
-            document.getElementById('modal-add-patient').classList.add('hidden');
-            // Fake add to session or DB depending on logic
+            
+            // Fake persistence
+            let customPatients = JSON.parse(localStorage.getItem('mc_custom_patients') || '[]');
+            const newId = name;
+            // Add identifying info so it's visible on list
+            customPatients.push({ id: newId, name: 'Patient ' + name });
+            localStorage.setItem('mc_custom_patients', JSON.stringify(customPatients));
+            
+            document.getElementById('invitation-code').value = ''; // Reset
             loadPatients();
         }
 
@@ -120,8 +122,7 @@
 
         function loadPatients() {
             const list = document.getElementById('patients-list');
-            // For now, load default demo patients
-            list.innerHTML = `
+            let html = `
                 <div class="patient-card" onclick="selectPatient('45987301', 'Jean-Pierre DUBOIS')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s;">
                     <img src="https://i.pravatar.cc/150?u=jeanpierre" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
                     <div style="flex:1;">
@@ -131,6 +132,22 @@
                     <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
                 </div>
             `;
+            
+            let customPatients = JSON.parse(localStorage.getItem('mc_custom_patients') || '[]');
+            customPatients.forEach((patient, idx) => {
+                html += `
+                <div class="patient-card" onclick="selectPatient('${patient.id}', '${patient.name.replace(/'/g, "\\'")}')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s; margin-top:10px;">
+                    <img src="https://i.pravatar.cc/150?u=${idx}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+                    <div style="flex:1;">
+                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">${patient.name}</h4>
+                        <p style="font-size:12px; color:#6B7280;">Nouveau patient (Accès approuvé)</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
+                </div>
+                `;
+            });
+            
+            list.innerHTML = html;
             
             // Show fake notification for demo purposes
             document.getElementById('pending-patient-requests').style.display = 'flex';

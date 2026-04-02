@@ -19,24 +19,20 @@
             <div class="notch"></div>
             <div class="app-container">
                 
-                <!-- Modifed to support Flex spacing for gear icon -->
-                <header class="patient-header" style="justify-content: space-between; align-items: center;">
-                    <div class="profile-info">
-                        <img src="https://i.pravatar.cc/150?img=1" alt="Patient" class="avatar" id="patient-avatar">
+                <!-- Modifed to support Heritage Clinical Theme -->
+                <header class="app-header">
+                    <div class="patient-info" style="display:flex; align-items:center; gap:12px;">
+                        <img src="https://i.pravatar.cc/150?img=1" alt="Patient" class="avatar" id="patient-avatar" style="width:40px; height:40px; border-radius:50%;">
                         <div>
-                            <h2 id="patient-name" style="color:#CE1126;">Patient</h2>
+                            <h2 id="patient-name">Patient</h2>
                             <p id="patient-info">Aucun patient sélectionné</p>
                         </div>
                     </div>
-                    <!-- Settings Button for Caregiver -->
-                    <button class="icon-btn" id="settings-btn" style="color: white; font-size: 20px;"><i class="fa-solid fa-gear"></i></button>
+                    <div class="header-actions">
+                        <!-- Settings Button for Caregiver -->
+                        <button class="header-btn" id="settings-btn" title="Paramètres"><i class="fa-solid fa-gear"></i></button>
+                    </div>
                 </header>
-
-                <div class="tabs">
-                    <div class="tab active" data-target="flux-view">Flux Monaco</div>
-                    <div class="tab" data-target="vault-view">Coffre <i class="fa-solid fa-lock" style="font-size:10px;"></i></div>
-                    <div class="tab" data-target="chat-list-view">Chat Pro</div>
-                </div>
 
                 <!-- Role switcher: visible seulement en mode démo admin (pas de session réelle) -->
                 <div class="role-switcher" id="role-switcher-container">
@@ -57,7 +53,7 @@
                 <div class="views-container">
 
                     <!-- VIEW 1 : FLUX MONACO -->
-                    <div id="flux-view" class="view">
+                    <div id="flux-view" class="view active">
                         <!-- Flux Filter Header -->
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px 0 20px;">
                             <h3 style="font-size: 14px; font-weight: 600; color: var(--text-dark);">Fil d'actualité</h3>
@@ -316,6 +312,21 @@
                         <button class="modal-btn cancel" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="margin-top: auto; margin-bottom: 0;">Fermer</button>
                         </div>
                         </div>
+                </div>
+
+                <div class="bottom-nav">
+                    <button class="nav-btn active" data-target="flux-view">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Flux</span>
+                    </button>
+                    <button class="nav-btn" data-target="vault-view">
+                        <i class="fa-solid fa-vault"></i>
+                        <span>Coffre</span>
+                    </button>
+                    <button class="nav-btn" data-target="chat-list-view">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Chat Pro</span>
+                    </button>
                 </div>
 
                 <div class="home-indicator"></div>
