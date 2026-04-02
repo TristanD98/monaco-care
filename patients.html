@@ -27,6 +27,22 @@
                 </header>
 
                 <div style="padding: 20px; flex: 1; overflow-y: auto;">
+                    <div id="pending-patient-requests" style="display:none; flex-direction:column; gap:10px; margin-bottom:20px;">
+                        <h3 style="font-size:14px; font-weight:600; color:var(--monaco-red);"><i class="fa-solid fa-bell"></i> Nouveaux Patients en attente</h3>
+                        <div style="background:var(--silver-light); border: 1px solid var(--monaco-red); border-radius:12px; padding:15px; display:flex; flex-direction:column; gap:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div style="flex:1;">
+                                    <h4 style="font-size:14px; margin-bottom:2px; color:#1A1A2E;">Martine DUBOIS</h4>
+                                    <p style="font-size:12px; color:#6B7280;">Demande d'accès envoyée par la Famille</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="modal-btn cancel" onclick="this.parentElement.parentElement.style.display='none'" style="margin:0; padding:8px; font-size:12px; flex:1;">Refuser</button>
+                                <button class="modal-btn" onclick="this.parentElement.parentElement.style.display='none'; alert('Patient ajouté à votre liste.')" style="margin:0; padding:8px; font-size:12px; flex:1;">Accepter</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="patients-list" style="display:flex; flex-direction:column; gap:15px;">
                         <!-- Les patients seront injectés ici par le JS -->
                     </div>
@@ -41,23 +57,21 @@
             
             <!-- MODAL ADD PATIENT / INVITATION -->
             <div id="modal-add-patient" class="modal hidden" style="z-index: 2000;">
-                <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-                    <h3 style="margin-bottom: 15px;">Ajouter un patient</h3>
-                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:20px; line-height:1.5;">Vous pouvez accepter une invitation reçue par la famille, ou créer un dossier manuellement.</p>
+                <div class="modal-content" style="height: 90%; max-height: 90%; display: flex; flex-direction: column;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-shrink: 0;">
+                        <h3 style="margin:0;">Ajouter un patient</h3>
+                        <button class="icon-btn" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark); background:transparent;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
                     
-                    <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; margin-bottom: 15px; background:var(--silver-light); text-align:left;">
-                        <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-envelope-open-text" style="color:var(--monaco-red);"></i> Accepter une invitation</h4>
-                        <input type="text" id="invitation-code" placeholder="Code d'invitation (Ex: INV-1234)" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
-                        <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px;">Valider le code</button>
+                    <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
+                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px; line-height:1.5;">Saisissez le N° d'identification unique du bénéficiaire. Une demande d'accès sera envoyée à son aidant principal (Famille).</p>
+                        
+                        <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; margin-bottom: 15px; background:var(--silver-light); text-align:left;">
+                            <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-hashtag" style="color:var(--monaco-red);"></i> Code du bénéficiaire</h4>
+                            <input type="text" id="invitation-code" placeholder="Ex: MC-89240" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:12px;">
+                            <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px;">Envoyer la demande d'accès</button>
+                        </div>
                     </div>
-
-                    <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; background:var(--silver-light); text-align:left;">
-                        <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-folder-plus" style="color:var(--monaco-red);"></i> Créer un nouveau dossier</h4>
-                        <input type="text" id="new-patient-name" placeholder="Nom et Prénom" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
-                        <button class="modal-btn" onclick="createPatient()" style="margin:0; padding:10px; font-size:13px; background:white; color:var(--text-dark); border:1px solid var(--silver-dark);">Créer le dossier</button>
-                    </div>
-
-                    <button class="modal-btn cancel" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="margin-top: 15px; margin-bottom: 0;">Fermer</button>
                 </div>
             </div>
             
@@ -114,6 +128,9 @@
                     <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
                 </div>
             `;
+            
+            // Show fake notification for demo purposes
+            document.getElementById('pending-patient-requests').style.display = 'flex';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
