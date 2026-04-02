@@ -22,10 +22,10 @@
                 <!-- Modifed to support Flex spacing for gear icon -->
                 <header class="patient-header" style="justify-content: space-between; align-items: center;">
                     <div class="profile-info">
-                        <img src="https://i.pravatar.cc/150?u=jeanpierre" alt="Patient" class="avatar">
+                        <img src="https://i.pravatar.cc/150?img=1" alt="Patient" class="avatar" id="patient-avatar">
                         <div>
-                            <h2>Jean-Pierre DUBOIS</h2>
-                            <p>ID: 45987301 • 78 ans</p>
+                            <h2 id="patient-name" style="color:#CE1126;">Patient</h2>
+                            <p id="patient-info">Aucun patient sélectionné</p>
                         </div>
                     </div>
                     <!-- Settings Button for Caregiver -->
@@ -82,47 +82,10 @@
                         </div>
                         
                         <div class="feed-area" id="flux-feed">
-                            <!-- Feed items -->
-                            <div class="feed-post">
-                                <div class="post-header">
-                                    <img src="https://i.pravatar.cc/150?u=sophie" class="post-avatar">
-                                    <div class="post-meta">
-                                        <h4>Sophie (Auxiliaire)</h4>
-                                        <p>Il y a 2 heures</p>
-                                    </div>
-                                    <span class="visibility-tag tag-public">PUBLIC</span>
-                                </div>
-                                <div class="post-content">
-                                    <p>Repas pris en entier ! Bonne humeur ce matin. 😊🍽️</p>
-                                </div>
-                            </div>
-
-                            <div class="feed-post">
-                                <div class="post-header">
-                                    <img src="https://i.pravatar.cc/150?u=marc" class="post-avatar">
-                                    <div class="post-meta">
-                                        <h4>Marc (Kiné)</h4>
-                                        <p>Hier à 10:45</p>
-                                    </div>
-                                    <span class="visibility-tag tag-team">ÉQUIPE & FAMILLE</span>
-                                </div>
-                                <div class="post-content">
-                                    <p>Excellente séance aujourd'hui. Jean-Pierre a pu faire 15 pas sans l'aide du déambulateur sous ma supervision. L'équilibre s'améliore.</p>
-                                </div>
-                            </div>
-
-                            <div class="feed-post medical-only-post">
-                                <div class="post-header">
-                                    <img src="https://i.pravatar.cc/150?u=sarah" class="post-avatar">
-                                    <div class="post-meta">
-                                        <h4>Dr. Sarah (Médecin)</h4>
-                                        <p>Lun à 14:00</p>
-                                    </div>
-                                    <span class="visibility-tag tag-medical">MÉDICAL UNIQUE</span>
-                                </div>
-                                <div class="post-content">
-                                    <p>Observation d'une légère inflammation au niveau de l'épaule gauche (suspectée post-traumatique mineure). J'ai prescrit une pommade AINS locale 2x/jour pendant 5 jours. À surveiller par l'équipe soignante.</p>
-                                </div>
+                            <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+                                <i class="fa-regular fa-newspaper" style="font-size:32px; margin-bottom:12px; display:block; opacity:0.4;"></i>
+                                <p style="font-size:13px;">Aucun message dans le flux pour le moment.</p>
+                                <p style="font-size:11px; margin-top:4px; opacity:0.7;">Les publications de l'équipe soignante apparaîtront ici.</p>
                             </div>
                         </div>
                         
@@ -249,9 +212,7 @@
                         <p style="margin-bottom: 15px; font-size:12px; color:var(--text-muted);">Sélectionnez un professionnel.</p>
                         
                         <div class="contact-list" style="display:flex; flex-direction:column; gap:8px;">
-                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red); width:20px;"></i> Dr. Sarah (Médecin)</button>
-                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-user-nurse" style="color:var(--monaco-red); width:20px;"></i> Sylvie (Infirmière)</button>
-                            <button class="modal-btn" style="background:var(--silver-light); color:var(--text-dark); text-align:left;"><i class="fa-solid fa-house-chimney-user" style="color:var(--monaco-red); width:20px;"></i> Emma (Fille du patient)</button>
+                            <p style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Aucun contact disponible pour le moment.</p>
                         </div>
                         <button class="modal-btn cancel" id="close-chat-modal" style="margin-top:15px; margin-bottom: 0;">Annuler</button>
                     </div>
@@ -350,19 +311,7 @@
                             </div>
                         </div>
 
-                        <!-- Subscription -->
-                        <div class="vault-section" id="settings-sub-section" style="text-align:left; margin-bottom:10px;">
-                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-credit-card" style="color:var(--monaco-red);"></i> Abonnement Monaco Care</h4>
-                            <div style="border:1px solid var(--silver-dark); border-radius:8px; padding:12px; margin-bottom:10px; background:var(--silver-light);">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <strong>Formule Premium</strong>
-                                    <span class="visibility-tag tag-medical" style="background:#10B981; color:white;">ACTIF</span>
-                                </div>
-                                <p style="font-size:11px; margin-top:5px; color:var(--text-muted);">Prochain prélèvement : 15 Avril 2026 (19,99€/mois)</p>
-                            </div>
-                            <button class="modal-btn" style="background:white; color:var(--text-dark); border:1px solid var(--silver-dark); margin:0;" id="pay-sub-btn">Gérer l'abonnement et payer</button>
                         </div>
-                    </div>
                 </div>
 
                 <div class="home-indicator"></div>
@@ -392,6 +341,16 @@
                 const name = session.displayName || session.proId || 'Utilisateur';
                 const role = roleLabel[session.role] || session.role;
                 info.textContent = `Connecté(e) en tant que : ${name} — ${role}`;
+            }
+
+            // Mettre à jour le header patient si disponible
+            const patientNameEl = document.getElementById('patient-name');
+            const patientInfoEl = document.getElementById('patient-info');
+            if (session.patientName && patientNameEl) {
+                patientNameEl.textContent = session.patientName;
+            }
+            if (session.patientInfo && patientInfoEl) {
+                patientInfoEl.textContent = session.patientInfo;
             }
 
             // Synchroniser le role-select avec le rôle de session

@@ -883,35 +883,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(secPro) secPro.style.display = 'block';
                 if(secSub) secSub.style.display = 'block';
                 if(secInv) secInv.style.display = 'block';
-                invList.innerHTML = `
-                    <div style="background:#F8F9FA; border:1px solid #E2E8F0; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <p style="font-size:13px; font-weight:600; color:#1A1A2E;">Dr. Sarah (Médecin)</p>
-                            <p style="font-size:11px; color:#6B7280;">Demande l'accès au dossier</p>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button style="background:#10B981; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Accès accordé au Dr. Sarah.');"><i class="fa-solid fa-check"></i></button>
-                            <button style="background:#EF4444; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Demande refusée.');"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    </div>
-                `;
+                if(invList) invList.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Aucune demande en attente.</p>';
             } else {
                 if(secPatient) secPatient.style.display = 'block';
                 if(secPro) secPro.style.display = 'none';
                 if(secSub) secSub.style.display = 'none';
                 if(secInv) secInv.style.display = 'block';
-                invList.innerHTML = `
-                    <div style="background:#F8F9FA; border:1px solid #E2E8F0; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <p style="font-size:13px; font-weight:600; color:#1A1A2E;">Famille DUBOIS</p>
-                            <p style="font-size:11px; color:#6B7280;">Vous invite à suivre Jean-Pierre</p>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button style="background:#10B981; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Invitation de la Famille DUBOIS acceptée.');"><i class="fa-solid fa-check"></i></button>
-                            <button style="background:#EF4444; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer;" onclick="this.parentElement.parentElement.remove(); alert('Invitation refusée.');"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    </div>
-                `;
+                if(invList) invList.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Aucune invitation  en attente.</p>';
             }
             settingsModal.classList.remove('hidden');
         });
