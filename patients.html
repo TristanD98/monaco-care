@@ -69,8 +69,11 @@
                         <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; margin-bottom: 15px; background:var(--silver-light); text-align:left;">
                             <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-hashtag" style="color:var(--monaco-red);"></i> Code du bénéficiaire</h4>
                             <input type="text" id="invitation-code" placeholder="Ex: MC-89240" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:12px;">
-                            <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px;">Envoyer la demande d'accès</button>
+                            <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px; margin-bottom:15px;">Envoyer la demande d'accès</button>
                         </div>
+
+                        <!-- Bouton Fermer Explicite -->
+                        <button class="modal-btn cancel" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="margin-top: auto; margin-bottom: 0;">Fermer</button>
                     </div>
                 </div>
             </div>
