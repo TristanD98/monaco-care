@@ -6,7 +6,7 @@
     <title>Monaco Care - Démo Complète</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=2">
+    <link rel="stylesheet" href="styles.css?v=3">
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -19,18 +19,17 @@
             <div class="notch"></div>
             <div class="app-container">
                 
-                <!-- Modifed to support Heritage Clinical Theme -->
+                <!-- Header Stitch : fond bordeaux, texte blanc -->
                 <header class="app-header">
                     <div class="patient-info" style="display:flex; align-items:center; gap:12px;">
-                        <img src="https://i.pravatar.cc/150?img=1" alt="Patient" class="avatar" id="patient-avatar" style="width:40px; height:40px; border-radius:50%;">
+                        <img src="https://i.pravatar.cc/150?img=1" alt="Patient" class="avatar" id="patient-avatar" style="width:44px; height:44px; border-radius:50%; border:2px solid rgba(255,255,255,0.4);">
                         <div>
-                            <h2 id="patient-name">Patient</h2>
-                            <p id="patient-info">Aucun patient sélectionné</p>
+                            <h2 id="patient-name" style="color:white; font-size:16px; font-weight:800;">Patient</h2>
+                            <p id="patient-info" style="color:rgba(255,255,255,0.75); font-size:11px; margin-top:1px;">Aucun patient sélectionné</p>
                         </div>
                     </div>
                     <div class="header-actions">
-                        <!-- Settings Button for Caregiver -->
-                        <button class="header-btn" id="settings-btn" title="Paramètres"><i class="fa-solid fa-gear"></i></button>
+                        <button class="header-btn" id="settings-btn" title="Paramètres" style="background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.2); color:white;"><i class="fa-solid fa-gear"></i></button>
                     </div>
                 </header>
 
@@ -45,9 +44,9 @@
                     </select>
                 </div>
                 <!-- Bandeau session réelle -->
-                <div id="session-banner" style="display:none; background:rgba(206,17,38,0.08); border-bottom:1px solid rgba(206,17,38,0.15); padding:8px 20px; display:none; align-items:center; justify-content:space-between;">
-                    <span id="session-info" style="font-size:12px; color:#CE1126; font-weight:600;"></span>
-                    <button onclick="MonacoCare.clearSession(); window.location.href='login.html';" style="font-size:11px; color:#CE1126; background:none; border:none; cursor:pointer; font-family:Inter,sans-serif;">Déconnexion</button>
+                <div id="session-banner">
+                    <span id="session-info"></span>
+                    <button onclick="MonacoCare.clearSession(); window.location.href='login.html';">Déconnexion</button>
                 </div>
 
                 <div class="views-container">
@@ -86,7 +85,7 @@
                         </div>
                         
                         <!-- Zone de saisie libre (Flux) -->
-                        <div class="input-area" style="position:static; border-top: 1px solid var(--silver-dark); padding-bottom: 20px;">
+                        <div class="input-area">
                             <button class="action-btn" id="flux-attach-btn"><i class="fa-solid fa-paperclip"></i></button>
                             <button class="action-btn urgent-btn" id="flux-urgent-toggle"><i class="fa-solid fa-triangle-exclamation"></i></button>
                             <div class="input-wrapper">
