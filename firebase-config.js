@@ -89,8 +89,8 @@ const MonacoCare = (() => {
     async function loginProfessional(proId, pin, remember) {
         // ── MODE DÉMO LOCAL ──
         const DEMO_PROS = {
-            'PRO-001': { pin: '1234', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
-            'PRO-002': { pin: '1234', name: 'Marc Dupont', specialty: 'Kinésithérapeute' },
+            'PRO-001': { pin: '1234', name: 'Tristan — Kinésithérapeute', specialty: 'Kinésithérapeute' },
+            'PRO-002': { pin: '1234', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
             'PRO-003': { pin: '1234', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
         };
         const proUpper = proId.toUpperCase().trim();
