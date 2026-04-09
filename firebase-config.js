@@ -54,6 +54,19 @@ const MonacoCare = (() => {
 
     // ── VALIDATION CODE DÉMO (FAMILLE) ─────────────────
     async function validateDemoCode(code) {
+        // ── MODE DÉMO LOCAL (fallback quand Firebase indisponible) ──
+        // Codes démo hardcodés pour les tests et démonstrations
+        const DEMO_CODES = {
+            'DEMO-2026': { patientId: 'patient-demo', label: 'Accès Famille Démo', expiresAt: null },
+            'FAM-001':   { patientId: 'patient-demo', label: 'Emma Dubois — Famille', expiresAt: null },
+            'FAM-002':   { patientId: 'patient-demo', label: 'Proche autorisé', expiresAt: null },
+            'MC-1234':   { patientId: 'patient-demo', label: 'Accès externe visiteur', expiresAt: null },
+        };
+        if (DEMO_CODES[code]) {
+            const entry = DEMO_CODES[code];
+            return { valid: true, patientId: entry.patientId, label: entry.label, expiresAt: entry.expiresAt };
+        }
+
         try {
             const docRef = db.collection('demo_codes').doc(code);
             const docSnap = await docRef.get();
@@ -67,22 +80,31 @@ const MonacoCare = (() => {
             return { valid: true, patientId: entry.patientId, label: entry.label, expiresAt: entry.expiresAt };
         } catch(error) {
             console.error("Firebase Auth Error: ", error);
-            // Fallback gracefully (if permissions restrict)
-            return { valid: false, message: 'Erreur réseau avec la base de données.' };
+            return { valid: false, message: 'Erreur réseau. Essayez le code DEMO-2026 pour tester.' };
         }
     }
 
+
     // ── CONNEXION PRO ──────────────────────────────────
     async function loginProfessional(proId, pin, remember) {
+        // ── MODE DÉMO LOCAL ──
+        const DEMO_PROS = {
+            'PRO-001': { pin: '1234', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
+            'PRO-002': { pin: '1234', name: 'Marc Dupont', specialty: 'Kinésithérapeute' },
+            'PRO-003': { pin: '1234', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
+        };
+        const proUpper = proId.toUpperCase().trim();
+        if (DEMO_PROS[proUpper] && pin === DEMO_PROS[proUpper].pin) {
+            const p = DEMO_PROS[proUpper];
+            return { success: true, displayName: p.name, specialty: p.specialty, email: `${proId.toLowerCase()}@monacocare.mc` };
+        }
+
         try {
-            // Astuce Sécurité : On se base sur le format PRO-XXX@monacocare.mc pour Firebase Auth
             const email = `${proId.toLowerCase().trim()}@monacocare.mc`;
             await auth.setPersistence(remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
-            
             await auth.signInWithEmailAndPassword(email, pin);
             
-            // Vérifier le statut du professionnel dans Firestore
-            const docRef = db.collection('professionals').doc(proId.toUpperCase().trim());
+            const docRef = db.collection('professionals').doc(proUpper);
             const docSnap = await docRef.get();
             if(!docSnap.exists) {
                 return { success: true, displayName: proId, specialty: 'Professionnel', email: email };
@@ -98,18 +120,17 @@ const MonacoCare = (() => {
                 return { success: false, message: 'Votre compte a été suspendu.' };
             }
 
-            // Met à jour la dernière connexion
             await docRef.update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() });
-
             return { success: true, displayName: proData.name, specialty: proData.specialty, email: proData.email };
         } catch(error) {
             console.error("Login error", error);
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                 return { success: false, message: 'Identifiant (Ex: PRO-001) ou code d\'accès incorrect.' };
+                 return { success: false, message: 'Identifiant (Ex: PRO-001) ou code d\'accès incorrect. En démo : PRO-001 / 1234' };
             }
-            return { success: false, message: "Erreur de connexion sécurisée." };
+            return { success: false, message: "Erreur de connexion. Essayez PRO-001 / 1234 pour la démo." };
         }
     }
+
 
     // ── INSCRIPTION PRO ─────────────────────────────────
     async function registerProfessional({ firstName, lastName, professionLabel, email }) {
