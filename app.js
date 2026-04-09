@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isUrgent = actionText.startsWith('⚠️ URGENT');
         const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
         const tagClass = isUrgent ? 'tag-urgent' : isMedical ? 'tag-medical' : 'tag-team';
-        const tagName  = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL UNIQUE' : 'ÉQUIPE & FAMILLE';
+        const tagName  = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL' : 'MÉDICAL & FAMILLE';
 
         const now = new Date();
         const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
@@ -377,10 +377,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* --- VISIBILITY TAG — CHANGEMENT DE CATÉGORIE --- */
     const VISIBILITY_OPTIONS = [
-        { key: 'team',    label: 'ÉQUIPE & FAMILLE', cls: 'tag-team',    icon: 'fa-users' },
-        { key: 'medical', label: 'MÉDICAL UNIQUE',   cls: 'tag-medical', icon: 'fa-stethoscope' },
-        { key: 'urgent',  label: '⚠️ URGENT',         cls: 'tag-urgent',  icon: 'fa-triangle-exclamation' },
-        { key: 'public',  label: 'PUBLIC',            cls: 'tag-sys',     icon: 'fa-globe' },
+        { key: 'public',   label: 'PUBLIC',              cls: 'tag-sys',     icon: 'fa-globe' },
+        { key: 'medical',  label: 'MÉDICAL',             cls: 'tag-medical', icon: 'fa-stethoscope' },
+        { key: 'medifam',  label: 'MÉDICAL & FAMILLE',   cls: 'tag-team',    icon: 'fa-users-between-lines' },
+        { key: 'family',   label: 'FAMILLE UNIQUEMENT',  cls: 'tag-family',  icon: 'fa-house-heart' },
     ];
 
     function bindVisibilityTag(post) {

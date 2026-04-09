@@ -570,6 +570,8 @@ body > .phone {
 }
 .tag-medical { background: rgba(123,21,53,0.1); color: var(--primary-container); }
 .tag-family  { background: rgba(67,102,83,0.1);  color: var(--secondary); }
+.tag-team    { background: rgba(67,102,83,0.12); color: var(--secondary); }
+.tag-sys     { background: var(--surface-high);  color: var(--outline); }
 
 /* ── Activity Feed (Flux Monaco) ─────────────────────────── */
 .feed-header {
