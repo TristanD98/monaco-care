@@ -28,19 +28,21 @@ document.addEventListener('DOMContentLoaded', () => {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
 
-            // Hide All Views
-            views.forEach(v => v.classList.add('hidden'));
+            // Hide All Views (remove .active)
+            views.forEach(v => v.classList.remove('active'));
 
-            // Show Target View
+            // Show Target View (add .active)
             const targetId = tab.getAttribute('data-target');
-            document.getElementById(targetId).classList.remove('hidden');
+            const target = document.getElementById(targetId);
+            if (target) target.classList.add('active');
 
             // Logic to handle internal state when tabbing
             if(targetId === 'chat-list-view') {
-                chatRoomView.classList.add('hidden'); // Ensure we always land on list, not open room
+                if (chatRoomView) chatRoomView.classList.remove('active');
             }
         });
     });
+
 
     /* --- ROLE SIMULATION LOGIC --- */
     
@@ -213,8 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openChatRoom(contact) {
-        chatListView.classList.add('hidden');
-        chatRoomView.classList.remove('hidden');
+        chatListView.classList.remove('active');
+        chatRoomView.classList.add('active');
         document.getElementById('current-chat-title').innerText = contact.name;
         document.getElementById('current-chat-subtitle').innerText = contact.role;
         const chatMessages = document.getElementById('chat-messages');
@@ -243,8 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentChatSub = document.getElementById('current-chat-subtitle');
 
     if (backBtn) backBtn.addEventListener('click', () => {
-        chatRoomView.classList.add('hidden');
-        chatListView.classList.remove('hidden');
+        chatRoomView.classList.remove('active');
+        chatListView.classList.add('active');
     });
     if (attachBtn) attachBtn.addEventListener('click', () => attachMenu && attachMenu.classList.toggle('hidden'));
     document.querySelectorAll('.attach-item').forEach(item => {
