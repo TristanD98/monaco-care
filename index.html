@@ -6,7 +6,7 @@
     <title>Monaco Care - Démo Complète</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -98,10 +98,17 @@
                     <!-- VIEW 2 : COFFRE MEDICAL -->
                     <div id="vault-view" class="view hidden">
                         <div class="biometric-overlay" id="biometric-overlay">
-                            <i class="fa-solid fa-fingerprint fa-4x bio-icon"></i>
-                            <h3>Authentification Requise</h3>
-                            <p>Accès réservé au personnel médical via Face ID / Empreinte.</p>
-                            <button class="bio-btn" id="simulate-bio-btn">Toucher pour déverrouiller</button>
+                            <div class="bio-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                            <h3>Coffre Médical</h3>
+                            <p>Authentification requise. Accès réservé au personnel soignant via Face ID ou empreinte.</p>
+                            <button class="bio-btn" id="simulate-bio-btn"><i class="fa-solid fa-fingerprint"></i> Déverrouiller</button>
+                            <div class="code-section">
+                                <p>Accès externe ? Saisissez le code délivré :</p>
+                                <div class="code-row">
+                                    <input type="text" id="external-code-input" placeholder="Ex: MC-4821" maxlength="10">
+                                    <button id="validate-code-btn">OK</button>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="vault-content hidden" id="vault-content">
@@ -157,19 +164,21 @@
                         </div>
                     </div>
 
-                    <!-- VIEW 3 : CHAT LIST (Previously existing) -->
+                    <!-- VIEW 3 : CHAT LIST -->
                     <div id="chat-list-view" class="view hidden">
                         <div class="list-header">
-                            <h3>Conversations du patient</h3>
-                            <button id="new-chat-btn" class="icon-btn"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <h3>Messages</h3>
+                            <button id="new-chat-btn" class="icon-btn" title="Nouveau message"><i class="fa-solid fa-pen-to-square"></i></button>
                         </div>
+                        <!-- Les contacts sont injectés par JS selon l'équipe du patient -->
                         <div class="chat-list" id="chat-list-container">
-                            <div class="chat-item" data-chat="global">
-                                <div class="chat-avatar group"><i class="fa-solid fa-users-medical"></i></div>
-                                <div class="chat-content">
-                                    <div class="chat-title-row"><h4>Équipe Médicale Globale</h4></div>
-                                    <p style="color:var(--text-muted); font-style:italic;">Aucun message pour l'instant.</p>
-                                </div>
+                            <!-- État vide par défaut - remplacé par JS si des contacts existent -->
+                            <div class="chat-empty-state" id="chat-empty-state">
+                                <i class="fa-regular fa-comments"></i>
+                                <p>Aucun contact dans l'équipe de ce patient pour l'instant.</p>
+                                <button class="chat-new-btn" id="chat-new-msg-btn">
+                                    <i class="fa-solid fa-plus"></i> Nouveau message
+                                </button>
                             </div>
                         </div>
                     </div>

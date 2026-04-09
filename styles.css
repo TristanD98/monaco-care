@@ -904,6 +904,229 @@ body > .phone {
 }
 .bio-btn:hover { transform: translateY(-1px); }
 
+/* ── Feed Post Cards (Flux Monaco) ───────────────────────── */
+.feed-post {
+    background: var(--surface-bright);
+    border-radius: var(--radius-lg);
+    margin: 10px 12px 0;
+    box-shadow: var(--rose-shadow);
+    overflow: hidden;
+    animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 8px;
+}
+.post-avatar {
+    width: 38px; height: 38px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+    flex-shrink: 0;
+    color: white;
+    background: linear-gradient(135deg, var(--primary-container), var(--primary));
+}
+.post-meta { flex: 1; }
+.post-meta h4 { font-size: 13px; font-weight: 700; color: var(--on-surface); }
+.post-meta p  { font-size: 11px; color: var(--on-surface-variant); margin-top: 1px; }
+
+.post-content {
+    padding: 4px 14px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--on-surface);
+    line-height: 1.4;
+}
+.post-content p { margin: 0; }
+
+.post-image {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    display: block;
+}
+
+.post-actions {
+    display: flex;
+    gap: 6px;
+    padding: 6px 14px 12px;
+    border-top: 1px solid var(--ghost-border);
+    margin-top: 4px;
+}
+.reply-btn {
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: background .15s;
+}
+.reply-btn:hover { background: var(--surface-low); color: var(--primary-container); }
+
+.post-comments {
+    padding: 0 14px;
+}
+.comment-item {
+    font-size: 12px;
+    color: var(--on-surface);
+    background: var(--surface-low);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+.comment-input-row {
+    display: flex;
+    gap: 6px;
+    padding: 6px 14px 10px;
+}
+.comment-input-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--ghost-border);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    background: var(--surface-low);
+    color: var(--on-surface);
+    outline: none;
+}
+.comment-input-row input:focus { border-color: var(--primary-container); }
+.comment-send-btn {
+    width: 30px; height: 30px;
+    border-radius: var(--radius-full);
+    background: var(--primary-container);
+    border: none; color: white;
+    font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Tags dans les posts */
+.tag-team   { background: rgba(67,102,83,0.12);  color: var(--secondary); }
+.tag-medical { background: rgba(123,21,53,0.1); color: var(--primary-container); }
+.tag-urgent { background: rgba(186,26,26,0.12); color: var(--error); }
+
+/* ── Biometric Gate (coffre) ──────────────────────────────── */
+.biometric-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+    gap: 16px;
+    flex: 1;
+    background: var(--surface-low);
+}
+.biometric-overlay .bio-icon {
+    width: 80px; height: 80px;
+    border-radius: var(--radius-xl);
+    background: rgba(123,21,53,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    color: var(--primary-container);
+    margin-bottom: 4px;
+}
+.biometric-overlay h3 { font-size: 18px; font-weight: 800; color: var(--on-surface); }
+.biometric-overlay p  { font-size: 13px; color: var(--on-surface-variant); line-height: 1.5; max-width: 240px; }
+.biometric-overlay .code-section {
+    width: 100%;
+    border-top: 1px solid var(--ghost-border);
+    padding-top: 16px;
+    margin-top: 4px;
+}
+.biometric-overlay .code-section p { font-size: 12px; margin-bottom: 8px; }
+.biometric-overlay .code-row {
+    display: flex;
+    gap: 8px;
+}
+.biometric-overlay .code-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--ghost-border);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 2px;
+    outline: none;
+    background: var(--surface-bright);
+    color: var(--on-surface);
+}
+.biometric-overlay .code-row input:focus { border-color: var(--primary-container); }
+.biometric-overlay .code-row button {
+    padding: 10px 16px;
+    background: var(--primary-container);
+    color: white; border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700; font-size: 13px;
+    cursor: pointer;
+}
+
+/* ── Vault Header Banner ──────────────────────────────────── */
+.vault-header-banner {
+    background: linear-gradient(135deg, var(--primary-container), var(--primary));
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.vault-header-banner p { font-size: 11px; color: rgba(255,255,255,0.7); }
+.unlocked-badge {
+    background: rgba(16,185,129,0.25);
+    color: #6ee7b7;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+}
+
+/* ── Chat empty state ─────────────────────────────────────── */
+.chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 24px;
+    text-align: center;
+    gap: 12px;
+    color: var(--on-surface-variant);
+}
+.chat-empty-state i { font-size: 36px; opacity: 0.3; }
+.chat-empty-state p { font-size: 13px; line-height: 1.5; }
+.chat-new-btn {
+    background: var(--primary-container);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700; font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: var(--fab-shadow);
+    transition: transform .15s;
+}
+.chat-new-btn:hover { transform: translateY(-1px); }
+
 /* ── Feedback states ──────────────────────────────────────── */
 .empty-msg {
     text-align: center;

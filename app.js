@@ -111,9 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateRoleUI(); // Initialize on load
 
 
-    /* --- MEDICAL VAULT BIOMETRIC MOCK --- */
+    /* --- BIOMETRIC + CODE EXTERNE --- */
     simulateBioBtn.addEventListener('click', () => {
-        simulateBioBtn.innerText = "Scan en cours...";
+        simulateBioBtn.textContent = "🗓️ Scan en cours...";
+        simulateBioBtn.disabled = true;
         setTimeout(() => {
             bioOverlay.classList.add('hidden');
             vaultContent.classList.remove('hidden');
@@ -121,21 +122,119 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1200);
     });
 
-    // Reset vault lock if user leaves the tab
+    const validateCodeBtn = document.getElementById('validate-code-btn');
+    const externalCodeInput = document.getElementById('external-code-input');
+    if (validateCodeBtn && externalCodeInput) {
+        validateCodeBtn.addEventListener('click', () => {
+            const code = externalCodeInput.value.trim().toUpperCase();
+            // Codes valides : MC-XXXX (n'importe quel code de 4+ chars après MC-)
+            if (code.startsWith('MC-') && code.length >= 6) {
+                bioOverlay.classList.add('hidden');
+                vaultContent.classList.remove('hidden');
+                vaultUnlocked = true;
+                // Accès allégé : cacher les notes cliniques
+                const clinSection = vaultContent.querySelector('#clinical-notes-container')?.closest('.vault-section');
+                if (clinSection) clinSection.style.display = 'none';
+            } else {
+                externalCodeInput.style.borderColor = '#ef4444';
+                externalCodeInput.placeholder = 'Code invalide — format MC-XXXX';
+                setTimeout(() => {
+                    externalCodeInput.style.borderColor = '';
+                    externalCodeInput.placeholder = 'Ex: MC-4821';
+                }, 2000);
+            }
+        });
+    }
+
+    // Verrouiller le coffre quand on quitte l'onglet
     document.querySelector('.nav-btn[data-target="flux-view"]').addEventListener('click', lockVault);
     document.querySelector('.nav-btn[data-target="chat-list-view"]').addEventListener('click', lockVault);
     function lockVault() {
         if(vaultUnlocked) {
             bioOverlay.classList.remove('hidden');
             vaultContent.classList.add('hidden');
-            simulateBioBtn.innerText = "Toucher pour déverrouiller";
+            simulateBioBtn.textContent = '🔒 Déverrouiller';
+            simulateBioBtn.disabled = false;
             vaultUnlocked = false;
         }
     }
 
 
-    /* --- CHAT ROOM LOGIC (Refactored & Restored) --- */
-    const chatItems = document.querySelectorAll('.chat-item');
+    /* --- CHAT : contacts mockés ---
+     * En mode session réelle, ces contacts seront remplacés par
+     * les vrais membres de l'équipe du patient depuis Firestore (Sprint 3).
+     */
+    const MOCK_TEAM = [
+        { name: 'Marc Dupont', role: 'Kinésithérapeute', initial: 'M', color: '#7B1535', lastMsg: 'Séance terminée, bonne mobilité.' },
+        { name: 'Dr. Sarah Chen', role: 'Médecin traitant', initial: 'S', color: '#436653', lastMsg: 'ECG normal, continuer le protocole.' },
+        { name: 'Sophie Martin', role: 'Auxiliaire de vie', initial: 'S', color: '#3B82F6', lastMsg: 'Repas pris, humeur stable.' },
+        { name: 'Emma Dubois', role: 'Famille — Fille', initial: 'E', color: '#8B5CF6', lastMsg: 'Merci pour vos retours.' },
+    ];
+
+    function renderChatList() {
+        const container = document.getElementById('chat-list-container');
+        const emptyState = document.getElementById('chat-empty-state');
+        const session = MonacoCare.getSession ? MonacoCare.getSession() : null;
+
+        // En session réelle, on filtrera par l'équipe du patient. En démo : mock.
+        const contacts = MOCK_TEAM;
+
+        if (!contacts || contacts.length === 0) {
+            if (emptyState) emptyState.style.display = 'flex';
+            return;
+        }
+
+        if (emptyState) emptyState.style.display = 'none';
+
+        // Nettoyer et reconstruire
+        container.innerHTML = '';
+        contacts.forEach(contact => {
+            const item = document.createElement('div');
+            item.className = 'chat-item';
+            item.dataset.name = contact.name;
+            item.dataset.role = contact.role;
+            item.innerHTML = `
+                <div class="chat-avatar" style="background:${contact.color}; color:white; font-weight:800; font-size:16px;">${contact.initial}</div>
+                <div class="chat-content">
+                    <div class="chat-title-row">
+                        <h4>${contact.name}</h4>
+                    </div>
+                    <p>${contact.role}</p>
+                    <p style="margin-top:3px; font-size:11px; color:var(--on-surface-variant); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${contact.lastMsg}</p>
+                </div>
+            `;
+            item.addEventListener('click', () => openChatRoom(contact));
+            container.appendChild(item);
+        });
+
+        // Rebrancher "Nouveau message"
+        const newMsgBtn = document.getElementById('chat-new-msg-btn');
+        if (newMsgBtn) newMsgBtn.addEventListener('click', () => openNewChatModal());
+    }
+
+    function openChatRoom(contact) {
+        chatListView.classList.add('hidden');
+        chatRoomView.classList.remove('hidden');
+        document.getElementById('current-chat-title').innerText = contact.name;
+        document.getElementById('current-chat-subtitle').innerText = contact.role;
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.innerHTML = `
+            <div class="message received">
+                <div class="sender-info">${contact.name} — Hier</div>
+                <div class="bubble">${contact.lastMsg}</div>
+            </div>
+        `;
+    }
+
+    function openNewChatModal() {
+        const modal = document.getElementById('new-chat-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    // Initialiser la liste chat
+    renderChatList();
+
+    /* --- CHAT ROOM BUTTONS --- */
     const backBtn = document.getElementById('back-btn');
     const attachBtn = document.getElementById('prescription-btn');
     const attachMenu = document.getElementById('attachment-menu');
@@ -143,210 +242,137 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentChatTitle = document.getElementById('current-chat-title');
     const currentChatSub = document.getElementById('current-chat-subtitle');
 
-    chatItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const chatType = item.getAttribute('data-chat');
-            chatListView.classList.add('hidden');
-            chatRoomView.classList.remove('hidden');
-            
-            chatMessages.innerHTML = '';
-            
-            if(chatType === 'global') {
-                currentChatTitle.innerText = "Équipe Médicale Globale";
-                currentChatSub.innerText = "3 participants";
-                chatMessages.innerHTML = `
-                    <div class="message received">
-                        <div class="sender-info">Marc (Kiné) - 10:30</div>
-                        <div class="bubble">Séance terminée. La mobilité du genou s'améliore, mais attention lors des transferts au lit.</div>
-                    </div>
-                    <div class="message received">
-                        <div class="sender-info">Dr. Sarah (Médecin) - 10:45</div>
-                        <div class="bubble">Merci Marc. J'ai ajouté une note clinique à ce sujet dans le coffre.</div>
-                    </div>
-                `;
-            } else if(chatType === 'assistant') {
-                currentChatTitle.innerText = "Assistante (Médicaments)";
-                currentChatSub.innerText = "1 participant";
-                chatMessages.innerHTML = `
-                    <div class="message received">
-                        <div class="sender-info">Assistante - Hier 19:00</div>
-                        <div class="bubble">N'oubliez pas les cachets après le repas du soir.</div>
-                    </div>
-                `;
-            }
-        });
+    if (backBtn) backBtn.addEventListener('click', () => {
+        chatRoomView.classList.add('hidden');
+        chatListView.classList.remove('hidden');
+    });
+    if (attachBtn) attachBtn.addEventListener('click', () => attachMenu && attachMenu.classList.toggle('hidden'));
+    document.querySelectorAll('.attach-item').forEach(item => {
+        item.addEventListener('click', () => attachMenu && attachMenu.classList.add('hidden'));
     });
 
+    /* --- SEND IN CHAT ROOM --- */
     const sendBtn = document.getElementById('send-btn');
     const messageInput = document.getElementById('message-input');
-    
-    // Add fake send logic
-    if(sendBtn) {
+    if(sendBtn && messageInput) {
         sendBtn.addEventListener('click', () => {
-            if(messageInput.value.trim() !== '') {
-                const isUrgent = document.getElementById('urgent-toggle').classList.contains('active');
-                const extraColor = isUrgent ? 'background-color: var(--urgent-border);' : '';
+            const text = messageInput.value.trim();
+            if (text !== '') {
+                const chatMessages = document.getElementById('chat-messages');
                 const msg = document.createElement('div');
                 msg.className = 'message sent';
-                msg.innerHTML = `
-                    <div class="sender-info">Vous - À l'instant</div>
-                    <div class="bubble" style="${extraColor}">${isUrgent ? '⚠️ ' : ''}${messageInput.value}</div>
-                `;
+                msg.innerHTML = `<div class="sender-info">Vous — À l'instant</div><div class="bubble">${text}</div>`;
                 chatMessages.appendChild(msg);
                 messageInput.value = '';
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         });
+        messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
     }
 
     const urgentToggle = document.getElementById('urgent-toggle');
     if(urgentToggle) {
         urgentToggle.addEventListener('click', () => {
             urgentToggle.classList.toggle('active');
-            if(urgentToggle.classList.contains('active')) {
-                urgentToggle.style.backgroundColor = 'var(--monaco-red)';
-                urgentToggle.style.color = 'white';
-            } else {
-                urgentToggle.style.backgroundColor = 'var(--silver-light)';
-                urgentToggle.style.color = 'var(--text-muted)';
-            }
+            urgentToggle.style.backgroundColor = urgentToggle.classList.contains('active') ? 'var(--monaco-red)' : '';
+            urgentToggle.style.color = urgentToggle.classList.contains('active') ? 'white' : '';
         });
     }
 
-    backBtn.addEventListener('click', () => {
-        chatRoomView.classList.add('hidden');
-        chatListView.classList.remove('hidden');
-    });
-
-    attachBtn.addEventListener('click', () => attachMenu.classList.toggle('hidden'));
-    document.querySelectorAll('.attach-item').forEach(item => {
-        item.addEventListener('click', () => attachMenu.classList.add('hidden'));
-    });
-
-    // New Chat list
+    // Bouton "Nouveau message" (header chat list)
     const newChatBtn = document.getElementById('new-chat-btn');
-    const newChatModal = document.getElementById('new-chat-modal');
-    const closeChatModal = document.getElementById('close-chat-modal');
-    
-    if(newChatBtn && newChatModal) {
-        newChatBtn.addEventListener('click', () => newChatModal.classList.remove('hidden'));
-    }
-    if(closeChatModal) {
-        closeChatModal.addEventListener('click', () => newChatModal.classList.add('hidden'));
-    }
-
-    // Handle starting a new chat
-    if(newChatModal) {
-        const contactBtns = newChatModal.querySelectorAll('.contact-list button:not(#close-chat-modal)');
-        contactBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const contactName = e.target.innerText.trim();
-                newChatModal.classList.add('hidden');
-                
-                // Open Chat Room View
-                chatListView.classList.add('hidden');
-                chatRoomView.classList.remove('hidden');
-                
-                // Update UI
-                currentChatTitle.innerText = contactName;
-                currentChatSub.innerText = "1 participant";
-                
-                // Clear previous messages and show welcome
-                chatMessages.innerHTML = `
-                    <div style="text-align:center; padding:15px; color:var(--text-muted); font-size:12px;">
-                        <p>Début de la nouvelle discussion sécurisée avec ${contactName}.</p>
-                    </div>
-                `;
-            });
+    if(newChatBtn) {
+        newChatBtn.addEventListener('click', () => {
+            const modal = document.getElementById('new-chat-modal');
+            if (modal) modal.classList.remove('hidden');
         });
+    }
+    const closeChatModal = document.getElementById('close-chat-modal');
+    if(closeChatModal) {
+        const modal = document.getElementById('new-chat-modal');
+        closeChatModal.addEventListener('click', () => modal && modal.classList.add('hidden'));
     }
 
     /* --- FEED PUBLISH LOGIC --- */
-    
-    // Fonction réutilisable pour ajouter un commentaire
-    function handleAddComment(container) {
-        const comment = prompt("💬 Ajouter un commentaire à cette publication :");
-        if(comment && comment.trim() !== '') {
-            const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0]; 
-            const newComment = document.createElement('div');
-            newComment.className = 'comment-item';
-            newComment.innerHTML = `<strong>${roleName} :</strong> ${comment}`;
-            container.appendChild(newComment);
-        }
+
+    // Initialiser les posts statiques en dur (démo) avec bindPostActions
+    document.querySelectorAll('.feed-post').forEach(post => bindPostActions(post));
+
+    /* --- PUBLISH TO FEED (design Stitch : carte blanche) --- */
+    function bindPostActions(postEl) {
+        const replyBtn = postEl.querySelector('.reply-btn');
+        const commentsContainer = postEl.querySelector('.post-comments');
+        if (!replyBtn || !commentsContainer) return;
+
+        replyBtn.addEventListener('click', () => {
+            // S'il y a déjà un input ouvert, ne pas en dupliquer
+            if (postEl.querySelector('.comment-input-row')) return;
+            const row = document.createElement('div');
+            row.className = 'comment-input-row';
+            row.innerHTML = `<input type="text" placeholder="Votre commentaire..."><button class="comment-send-btn"><i class="fa-solid fa-paper-plane"></i></button>`;
+            commentsContainer.after(row);
+            const inp = row.querySelector('input');
+            const sendCommentBtn = row.querySelector('.comment-send-btn');
+            inp.focus();
+            const submitComment = () => {
+                const txt = inp.value.trim();
+                if (!txt) return;
+                const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+                const comment = document.createElement('div');
+                comment.className = 'comment-item';
+                comment.innerHTML = `<strong>${roleName} :</strong> ${txt}`;
+                commentsContainer.appendChild(comment);
+                row.remove();
+            };
+            sendCommentBtn.addEventListener('click', submitComment);
+            inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitComment(); });
+        });
     }
 
-    // Inititaliser les posts "en dur" (démo) avec la zone de commentaires
-    const existingPosts = document.querySelectorAll('.feed-post');
-    existingPosts.forEach(post => {
-        const commentsContainer = document.createElement('div');
-        commentsContainer.className = 'post-comments';
-        post.appendChild(commentsContainer);
-
-        const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'post-actions';
-        actionsContainer.innerHTML = `<button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>`;
-        post.appendChild(actionsContainer);
-
-        actionsContainer.querySelector('.reply-btn').addEventListener('click', () => handleAddComment(commentsContainer));
-    });
-
-    function publishToFeed(actionText) {
-        // Optionnel : Ajouter un post en même temps que l'action rapide
-        const optionalComment = prompt(`Action: ${actionText}\n👉 Souhaitez-vous ajouter une précision ou un commentaire ? (Laisser vide si inutile)`);
-
+    function publishToFeed(actionText, imageUrl) {
         const fluxFeed = document.getElementById('flux-feed');
         const role = roleSelect.value;
-        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0]; 
+        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
         const titleJob = roleSelect.options[roleSelect.selectedIndex].text;
-        
-        let tagClass = "tag-team";
-        let tagName = "ÉQUIPE & FAMILLE";
-        
-        if(actionText.toLowerCase().includes("douleur") || actionText.toLowerCase().includes("prescription") || role === 'medecin') {
-            tagClass = "tag-medical";
-            tagName = "MÉDICAL UNIQUE";
-        }
-        
-        const now = new Date();
-        const timeStr = "À l'instant (" + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ")";
-        
-        // Construction de base du commentaire si fourni
-        let commentHTML = `<div class="post-comments">`;
-        if (optionalComment && optionalComment.trim() !== '') {
-            commentHTML += `<div class="comment-item"><strong>${roleName} :</strong> ${optionalComment}</div>`;
-        }
-        commentHTML += `</div>`;
 
-        const newPost = document.createElement('div');
-        const isMedical = tagClass === 'tag-medical' ? ' medical-only-post' : '';
-        newPost.className = 'feed-post' + isMedical;
-        
-        newPost.innerHTML = `
+        const isUrgent = actionText.startsWith('⚠️ URGENT');
+        const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
+        const tagClass = isUrgent ? 'tag-urgent' : isMedical ? 'tag-medical' : 'tag-team';
+        const tagName = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL UNIQUE' : 'ÉQUIPE &amp; FAMILLE';
+
+        const now = new Date();
+        const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
+
+        const imageHTML = imageUrl ? `<img class="post-image" src="${imageUrl}" alt="Photo">` : '';
+
+        const isMedPost = isMedical ? ' medical-only-post' : '';
+        const post = document.createElement('div');
+        post.className = 'feed-post' + isMedPost;
+        post.innerHTML = `
             <div class="post-header">
-                <div class="post-avatar" style="background:var(--monaco-red); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:16px;">${roleName.charAt(0)}</div>
+                <div class="post-avatar">${roleName.charAt(0)}</div>
                 <div class="post-meta">
                     <h4>${titleJob}</h4>
                     <p>${timeStr}</p>
                 </div>
                 <span class="visibility-tag ${tagClass}">${tagName}</span>
             </div>
-            <div class="post-content">
-                <p><strong>${actionText}</strong></p>
-            </div>
-            ${commentHTML}
+            ${imageHTML}
+            <div class="post-content"><p>${actionText}</p></div>
+            <div class="post-comments"></div>
             <div class="post-actions">
                 <button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>
             </div>
         `;
-        
-        const replyBtn = newPost.querySelector('.reply-btn');
-        const commentsContainer = newPost.querySelector('.post-comments');
-        replyBtn.addEventListener('click', () => handleAddComment(commentsContainer));
+        bindPostActions(post);
 
-        newPost.style.opacity = '0';
-        newPost.style.transition = 'opacity 0.3s ease-in';
-        fluxFeed.insertBefore(newPost, fluxFeed.firstChild);
-        setTimeout(() => newPost.style.opacity = '1', 50);
+        post.style.opacity = '0';
+        fluxFeed.insertBefore(post, fluxFeed.firstChild);
+        setTimeout(() => post.style.opacity = '1', 50);
+
+        // Retirer le message "vide"
+        const emptyMsg = fluxFeed.querySelector('.empty-msg, [style*="text-align:center"]');
+        if (emptyMsg) emptyMsg.remove();
     }
 
     /* --- FLUX FREETEXT INPUT LOGIC --- */
@@ -368,8 +394,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /* --- FLUX ATTACHEMENTS (PHOTO RÉELLE) --- */
     if(fluxAttachBtn) {
-        fluxAttachBtn.addEventListener('click', () => alert("Simulation : Ouverture de la galerie photo ou du gestionnaire de fichiers pour ajouter une pièce jointe au flux."));
+        // Créer un input file caché
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        fluxAttachBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const imageDataUrl = ev.target.result;
+                const role = roleSelect.value;
+                const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+                const now = new Date();
+                const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
+
+                const fluxFeed = document.getElementById('flux-feed');
+                const post = document.createElement('div');
+                post.className = 'feed-post';
+                post.innerHTML = `
+                    <div class="post-header">
+                        <div class="post-avatar">${roleName.charAt(0)}</div>
+                        <div class="post-meta">
+                            <h4>${roleName}</h4>
+                            <p>${timeStr}</p>
+                        </div>
+                        <span class="visibility-tag tag-team">ÉQUIPE &amp; FAMILLE</span>
+                    </div>
+                    <img class="post-image" src="${imageDataUrl}" alt="Photo partagée">
+                    <div class="post-actions">
+                        <button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>
+                    </div>
+                    <div class="post-comments"></div>
+                `;
+                bindPostActions(post);
+                post.style.opacity = '0';
+                fluxFeed.insertBefore(post, fluxFeed.firstChild);
+                setTimeout(() => post.style.opacity = '1', 50);
+                fileInput.value = ''; // reset
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     if(fluxSendBtn) {
