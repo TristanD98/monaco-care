@@ -28,8 +28,26 @@
                             <p id="patient-info" style="color:rgba(255,255,255,0.75); font-size:11px; margin-top:1px;">Aucun patient sélectionné</p>
                         </div>
                     </div>
-                    <div class="header-actions">
-                        <button class="header-btn" id="settings-btn" title="Paramètres" style="background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.2); color:white;"><i class="fa-solid fa-gear"></i></button>
+                    <div class="header-actions" style="position:relative;">
+                        <button class="header-btn" id="header-menu-btn" title="Menu" style="background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.2); color:white;">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <!-- Dropdown menu -->
+                        <div id="header-dropdown" class="header-dropdown hidden">
+                            <a href="patients.html" class="dropdown-item">
+                                <i class="fa-solid fa-users"></i> Choisir un patient
+                            </a>
+                            <button class="dropdown-item" id="dd-add-patient">
+                                <i class="fa-solid fa-user-plus"></i> Ajouter un patient
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" id="dd-settings">
+                                <i class="fa-solid fa-gear"></i> Paramètres
+                            </button>
+                            <button class="dropdown-item dropdown-danger" id="dd-logout">
+                                <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -96,7 +114,7 @@
                     </div>
 
                     <!-- VIEW 2 : COFFRE MEDICAL -->
-                    <div id="vault-view" class="view hidden">
+                    <div id="vault-view" class="view">
                         <div class="biometric-overlay" id="biometric-overlay">
                             <div class="bio-icon"><i class="fa-solid fa-fingerprint"></i></div>
                             <h3>Coffre Médical</h3>
@@ -165,7 +183,7 @@
                     </div>
 
                     <!-- VIEW 3 : CHAT LIST -->
-                    <div id="chat-list-view" class="view hidden">
+                    <div id="chat-list-view" class="view">
                         <div class="list-header">
                             <h3>Messages</h3>
                             <button id="new-chat-btn" class="icon-btn" title="Nouveau message"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -184,7 +202,7 @@
                     </div>
 
                     <!-- VIEW 4 : CHAT ROOM (Previously existing) -->
-                    <div id="chat-room-view" class="view hidden" style="z-index: 50;">
+                    <div id="chat-room-view" class="view" style="z-index: 50;">
                         <div class="room-header">
                             <button id="back-btn" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
                             <div class="room-title">

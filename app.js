@@ -89,23 +89,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 2. Manage "MEDICAL_ONLY" Posts & Vault Access
-        const stnBtn = document.getElementById('settings-btn');
-        if(role === 'auxiliaire' || role === 'pro') {
-            medicalPosts.forEach(post => post.style.display = 'none'); // Hide doctor notes
+        // Manage role display — no more reference to old settings-btn
+        const menuBtn = document.getElementById('header-menu-btn');
+        if(role === 'auxiliaire') {
+            medicalPosts.forEach(post => post.style.display = 'none');
             bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale / Famille Nécessaire.";
             simulateBioBtn.style.display = 'none';
-            if(stnBtn) stnBtn.style.display = 'none';
         } else if (role === 'family') {
             medicalPosts.forEach(post => post.style.display = 'flex');
             bioOverlay.querySelector('p').innerText = "Accès sécurisé Famille via Face ID / Empreinte.";
             simulateBioBtn.style.display = 'inline-block';
-            if(stnBtn) stnBtn.style.display = 'flex';
         } else {
             medicalPosts.forEach(post => post.style.display = 'flex');
             bioOverlay.querySelector('p').innerText = "Accès réservé au personnel médical via Face ID / Empreinte.";
             simulateBioBtn.style.display = 'inline-block';
-            if(stnBtn) stnBtn.style.display = 'none';
         }
     };
 
@@ -340,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isUrgent = actionText.startsWith('⚠️ URGENT');
         const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
         const tagClass = isUrgent ? 'tag-urgent' : isMedical ? 'tag-medical' : 'tag-team';
-        const tagName = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL UNIQUE' : 'ÉQUIPE &amp; FAMILLE';
+        const tagName  = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL UNIQUE' : 'ÉQUIPE & FAMILLE';
 
         const now = new Date();
         const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
@@ -357,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h4>${titleJob}</h4>
                     <p>${timeStr}</p>
                 </div>
-                <span class="visibility-tag ${tagClass}">${tagName}</span>
+                <span class="visibility-tag ${tagClass}" title="Cliquer pour changer la visibilité">${tagName}</span>
             </div>
             ${imageHTML}
             <div class="post-content"><p>${actionText}</p></div>
@@ -367,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         bindPostActions(post);
+        bindVisibilityTag(post);
 
         post.style.opacity = '0';
         fluxFeed.insertBefore(post, fluxFeed.firstChild);
@@ -376,6 +374,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const emptyMsg = fluxFeed.querySelector('.empty-msg, [style*="text-align:center"]');
         if (emptyMsg) emptyMsg.remove();
     }
+
+    /* --- VISIBILITY TAG — CHANGEMENT DE CATÉGORIE --- */
+    const VISIBILITY_OPTIONS = [
+        { key: 'team',    label: 'ÉQUIPE & FAMILLE', cls: 'tag-team',    icon: 'fa-users' },
+        { key: 'medical', label: 'MÉDICAL UNIQUE',   cls: 'tag-medical', icon: 'fa-stethoscope' },
+        { key: 'urgent',  label: '⚠️ URGENT',         cls: 'tag-urgent',  icon: 'fa-triangle-exclamation' },
+        { key: 'public',  label: 'PUBLIC',            cls: 'tag-sys',     icon: 'fa-globe' },
+    ];
+
+    function bindVisibilityTag(post) {
+        const tag = post.querySelector('.visibility-tag');
+        if (!tag) return;
+
+        tag.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Fermer tout popup existant
+            document.querySelectorAll('.visibility-popup').forEach(p => p.remove());
+
+            const popup = document.createElement('div');
+            popup.className = 'visibility-popup';
+            VISIBILITY_OPTIONS.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'vis-option';
+                btn.innerHTML = `<i class="fa-solid ${opt.icon}"></i> ${opt.label}`;
+                btn.addEventListener('click', () => {
+                    // Retirer toutes les classes tag-*
+                    tag.className = `visibility-tag ${opt.cls}`;
+                    tag.textContent = opt.label;
+                    popup.remove();
+                    // Mettre à jour la classe medical-only-post si besoin
+                    if (opt.key === 'medical') {
+                        post.classList.add('medical-only-post');
+                    } else {
+                        post.classList.remove('medical-only-post');
+                    }
+                });
+                popup.appendChild(btn);
+            });
+
+            tag.style.position = 'relative';
+            tag.appendChild(popup);
+
+            // Fermer en cliquant ailleurs
+            setTimeout(() => {
+                document.addEventListener('click', () => popup.remove(), { once: true });
+            }, 10);
+        });
+    }
+
+    // Bind sur les posts déjà présents au chargement
+    document.querySelectorAll('.feed-post .visibility-tag').forEach(tag => {
+        const post = tag.closest('.feed-post');
+        if (post) bindVisibilityTag(post);
+    });
+
+
 
     /* --- FLUX FREETEXT INPUT LOGIC --- */
     const fluxSendBtn = document.getElementById('flux-send-btn');
@@ -941,40 +995,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- NEW: SETTINGS MODAL LOGIC --- */
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
+    /* --- HEADER DROPDOWN MENU --- */
+    const headerMenuBtn  = document.getElementById('header-menu-btn');
+    const headerDropdown = document.getElementById('header-dropdown');
+    const settingsModal  = document.getElementById('settings-modal');
     const closeSettingsModal = document.getElementById('close-settings-modal');
 
-    // Toggle settings modal
-    if (settingsBtn && settingsModal) {
-        settingsBtn.addEventListener('click', () => {
+    if (headerMenuBtn && headerDropdown) {
+        headerMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            headerDropdown.classList.toggle('hidden');
+        });
+        // Fermer en cliquant ailleurs
+        document.addEventListener('click', () => headerDropdown.classList.add('hidden'));
+        headerDropdown.addEventListener('click', e => e.stopPropagation());
+    }
+
+    // Paramètres (ouvre le modal existant)
+    const ddSettings = document.getElementById('dd-settings');
+    if (ddSettings && settingsModal) {
+        ddSettings.addEventListener('click', () => {
+            headerDropdown.classList.add('hidden');
             const role = roleSelect.value;
             const secPatient = document.getElementById('settings-add-patient-section');
-            const secPro = document.getElementById('settings-add-pro-section');
-            const secSub = document.getElementById('settings-sub-section');
-            const secInv = document.getElementById('settings-invitations-section');
-            const invList = document.getElementById('pending-invitations-list');
-
+            const secPro     = document.getElementById('settings-add-pro-section');
+            const secSub     = document.getElementById('settings-sub-section');
+            const secInv     = document.getElementById('settings-invitations-section');
+            const invList    = document.getElementById('pending-invitations-list');
             if (role === 'family') {
                 if(secPatient) secPatient.style.display = 'block';
-                if(secPro) secPro.style.display = 'block';
-                if(secSub) secSub.style.display = 'block';
-                if(secInv) secInv.style.display = 'block';
-                if(invList) invList.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Aucune demande en attente.</p>';
+                if(secPro)     secPro.style.display = 'block';
+                if(secSub)     secSub.style.display = 'block';
+                if(secInv)     secInv.style.display = 'block';
+                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Aucune demande en attente.</p>';
             } else {
                 if(secPatient) secPatient.style.display = 'block';
-                if(secPro) secPro.style.display = 'none';
-                if(secSub) secSub.style.display = 'none';
-                if(secInv) secInv.style.display = 'block';
-                if(invList) invList.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Aucune invitation  en attente.</p>';
+                if(secPro)     secPro.style.display = 'none';
+                if(secSub)     secSub.style.display = 'none';
+                if(secInv)     secInv.style.display = 'block';
+                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Aucune invitation en attente.</p>';
             }
             settingsModal.classList.remove('hidden');
         });
     }
-
     if (closeSettingsModal) {
         closeSettingsModal.addEventListener('click', () => settingsModal.classList.add('hidden'));
+    }
+
+    // Déconnexion
+    const ddLogout = document.getElementById('dd-logout');
+    if (ddLogout) {
+        ddLogout.addEventListener('click', () => {
+            MonacoCare.clearSession();
+            window.location.href = 'login.html';
+        });
     }
 
     // Add Patient/Beneficiary Logic
