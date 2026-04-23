@@ -60,6 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const role = roleSelect.value;
         const roleName = roleSelect.options[roleSelect.selectedIndex].text;
 
+        // Header Update with current Patient
+        const session = MonacoCare.getSession();
+        if(session && session.label) {
+            const ptNameEl = document.getElementById('patient-name');
+            const ptInfoEl = document.getElementById('patient-info');
+            if(ptNameEl) ptNameEl.innerText = session.label;
+            if(ptInfoEl) ptInfoEl.innerText = "Dossier : " + (session.patientId || "N/A");
+        }
+
         // 1. Update Flux Quick Buttons
         const savedShortcuts = window.customShortcuts[role] || [];
         
@@ -104,6 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
             bioOverlay.querySelector('p').innerText = "Accès réservé au personnel médical via Face ID / Empreinte.";
             simulateBioBtn.style.display = 'inline-block';
         }
+
+        // Re-charger le flux en temps réel pour appliquer les nouveaux filtres de rôle
+        const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+        if (typeof loadRealtimeFeed === 'function') {
+            const fluxFeed = document.getElementById('flux-feed');
+            if(fluxFeed) fluxFeed.innerHTML = ''; // Nettoyer pour recréer proprement
+            loadRealtimeFeed(patientId);
+        }
     };
 
     roleSelect.addEventListener('change', updateRoleUI);
@@ -111,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* --- BIOMETRIC + CODE EXTERNE --- */
+    let vaultListeners = [];
+
     simulateBioBtn.addEventListener('click', () => {
         simulateBioBtn.textContent = "🗓️ Scan en cours...";
         simulateBioBtn.disabled = true;
@@ -118,6 +137,12 @@ document.addEventListener('DOMContentLoaded', () => {
             bioOverlay.classList.add('hidden');
             vaultContent.classList.remove('hidden');
             vaultUnlocked = true;
+            
+            // Accès complet (soignant)
+            const clinSection = vaultContent.querySelector('#clinical-notes-container')?.closest('.vault-section');
+            if(clinSection) clinSection.style.display = 'block';
+            
+            loadRealtimeVault(MonacoCare.getSession()?.patientId || 'patient-demo', true);
         }, 1200);
     });
 
@@ -131,9 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 bioOverlay.classList.add('hidden');
                 vaultContent.classList.remove('hidden');
                 vaultUnlocked = true;
-                // Accès allégé : cacher les notes cliniques
+                
+                // Accès allégé : cacher les notes cliniques (famille ou pro externe limité)
                 const clinSection = vaultContent.querySelector('#clinical-notes-container')?.closest('.vault-section');
                 if (clinSection) clinSection.style.display = 'none';
+
+                loadRealtimeVault(MonacoCare.getSession()?.patientId || 'patient-demo', false);
             } else {
                 externalCodeInput.style.borderColor = '#ef4444';
                 externalCodeInput.placeholder = 'Code invalide — format MC-XXXX';
@@ -155,43 +183,215 @@ document.addEventListener('DOMContentLoaded', () => {
             simulateBioBtn.textContent = '🔒 Déverrouiller';
             simulateBioBtn.disabled = false;
             vaultUnlocked = false;
+            
+            // Cleanup des listeners
+            vaultListeners.forEach(unsub => unsub());
+            vaultListeners = [];
         }
     }
+
+    // Fonction de chargement temps réel du Coffre
+    function loadRealtimeVault(patientId, showClinicalNotes) {
+        // Nettoyer existants
+        vaultListeners.forEach(unsub => unsub());
+        vaultListeners = [];
+
+        // 1. Constantes
+        const vitalsGrid = document.getElementById('vitals-grid-container');
+        if(vitalsGrid) {
+            vitalsGrid.innerHTML = '<div style="text-align:center;color:gray;grid-column:1/-1;">Chargement...</div>';
+            const unsubVitals = db.collection('medical_vitals')
+                .where('patientId', '==', patientId)
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .onSnapshot(snap => {
+                    if(snap.empty) {
+                        vitalsGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                            <i class="fa-regular fa-chart-bar" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                            Aucune constante enregistrée.
+                        </div>`;
+                    } else {
+                        vitalsGrid.innerHTML = '';
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            const div = document.createElement('div');
+                            div.className = 'vital-card';
+                            div.innerHTML = `
+                                <h4>${d.type}</h4>
+                                <div class="value">${d.value} <span class="unit">${d.unit || ''}</span></div>
+                                <div class="status ${d.status || 'normal'}">${d.status === 'alert' ? 'À surveiller' : 'Normal'}</div>
+                            `;
+                            vitalsGrid.appendChild(div);
+                        });
+                    }
+                });
+            vaultListeners.push(unsubVitals);
+        }
+
+        // 2. Douleur
+        const painGrid = document.getElementById('pain-trackers-container');
+        if(painGrid) {
+            painGrid.innerHTML = '<div style="text-align:center;color:gray;">Chargement...</div>';
+            const unsubPain = db.collection('medical_pain')
+                .where('patientId', '==', patientId)
+                .orderBy('createdAt', 'desc')
+                .limit(5)
+                .onSnapshot(snap => {
+                    if(snap.empty) {
+                        painGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                            <i class="fa-regular fa-face-smile" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                            Aucune évaluation enregistrée.
+                        </div>`;
+                    } else {
+                        painGrid.innerHTML = '';
+                        snap.forEach(doc => {
+                            const d = doc.data();
+                            const div = document.createElement('div');
+                            div.className = 'pain-item';
+                            div.innerHTML = `
+                                <div>
+                                    <div style="font-weight:600; font-size:14px; margin-bottom:2px;">${d.location}</div>
+                                    <div style="color:var(--text-muted); font-size:12px;">Évaluée par ${d.authorName}</div>
+                                </div>
+                                <div class="pain-score score-${d.level > 7 ? 'high' : (d.level > 3 ? 'medium' : 'low')}">${d.level}/10</div>
+                            `;
+                            painGrid.appendChild(div);
+                        });
+                    }
+                });
+            vaultListeners.push(unsubPain);
+        }
+
+        // 3. Notes Cliniques
+        if(showClinicalNotes) {
+            const notesGrid = document.getElementById('clinical-notes-container');
+            if(notesGrid) {
+                notesGrid.innerHTML = '<div style="text-align:center;color:gray;">Chargement...</div>';
+                const unsubNotes = db.collection('medical_notes')
+                    .where('patientId', '==', patientId)
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snap => {
+                        if(snap.empty) {
+                            notesGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                                <i class="fa-regular fa-note-sticky" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                Aucune note clinique pour le moment.
+                            </div>`;
+                        } else {
+                            notesGrid.innerHTML = '';
+                            snap.forEach(doc => {
+                                const d = doc.data();
+                                const div = document.createElement('div');
+                                div.style = "background: white; border-radius:12px; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); margin-bottom:10px;";
+                                
+                                let timeDisplay = "";
+                                if(d.createdAt) {
+                                    const dateObj = d.createdAt.toDate();
+                                    timeDisplay = dateObj.toLocaleDateString() + ' ' + dateObj.getHours().toString().padStart(2,'0') + ':' + dateObj.getMinutes().toString().padStart(2,'0');
+                                }
+
+                                div.innerHTML = `
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                        <b style="font-size:13px;">${d.authorName}</b>
+                                        <span style="font-size:11px; color:var(--text-muted);">${d.authorRole} • ${timeDisplay}</span>
+                                    </div>
+                                    <p style="font-size:13px; line-height:1.4;">${d.content}</p>
+                                `;
+                                notesGrid.appendChild(div);
+                            });
+                        }
+                    });
+                vaultListeners.push(unsubNotes);
+            }
+        }
+    }
+
 
 
     /* --- CHAT : contacts mockés ---
      * En mode session réelle, ces contacts seront remplacés par
      * les vrais membres de l'équipe du patient depuis Firestore (Sprint 3).
      */
-    const MOCK_TEAM = [
-        { name: 'Marc Dupont', role: 'Kinésithérapeute', initial: 'M', color: '#7B1535', lastMsg: 'Séance terminée, bonne mobilité.' },
-        { name: 'Dr. Sarah Chen', role: 'Médecin traitant', initial: 'S', color: '#436653', lastMsg: 'ECG normal, continuer le protocole.' },
-        { name: 'Sophie Martin', role: 'Auxiliaire de vie', initial: 'S', color: '#3B82F6', lastMsg: 'Repas pris, humeur stable.' },
-        { name: 'Emma Dubois', role: 'Famille — Fille', initial: 'E', color: '#8B5CF6', lastMsg: 'Merci pour vos retours.' },
-    ];
+    /* --- CHAT : REALTIME CONTACTS & MESSAGES --- */
+    let currentChatListener = null;
+    let currentContactId = null;
 
-    function renderChatList() {
+    async function loadPatientTeam(patientId) {
+        try {
+            const patientSnap = await db.collection('patients').doc(patientId).get();
+            if (!patientSnap.exists) return [];
+            
+            const data = patientSnap.data();
+            const pros = data.assignedPros || [];
+            const familles = data.assignedFamilyCodes || [];
+            
+            let team = [];
+            
+            // Loop pros
+            for (const proId of pros) {
+                const pSnap = await db.collection('professionals').doc(proId).get();
+                if (pSnap.exists) {
+                    const pData = pSnap.data();
+                    team.push({
+                        id: proId,
+                        name: pData.name || proId,
+                        role: pData.role || pData.specialty || 'Professionnel',
+                        initial: (pData.name || proId).charAt(0).toUpperCase(),
+                        color: pData.color || '#64748B'
+                    });
+                }
+            }
+            // Loop family
+            for (const code of familles) {
+                const fSnap = await db.collection('demo_codes').doc(code).get();
+                if (fSnap.exists && fSnap.data().active) {
+                    const fData = fSnap.data();
+                    team.push({
+                        id: code,
+                        name: fData.name || fData.label || 'Famille',
+                        role: fData.role || 'Famille',
+                        initial: (fData.name || fData.label || 'F').charAt(0).toUpperCase(),
+                        color: '#8B5CF6'
+                    });
+                }
+            }
+            return team;
+        } catch(e) {
+            console.error("Erreur chargement équipe:", e);
+            return [];
+        }
+    }
+
+    async function renderChatList() {
         const container = document.getElementById('chat-list-container');
         const emptyState = document.getElementById('chat-empty-state');
-        const session = MonacoCare.getSession ? MonacoCare.getSession() : null;
+        const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
 
-        // En session réelle, on filtrera par l'équipe du patient. En démo : mock.
-        const contacts = MOCK_TEAM;
+        // Afficher un "Chargement..."
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Chargement de l\'équipe...</div>';
+        
+        let contacts = await loadPatientTeam(patientId);
 
         if (!contacts || contacts.length === 0) {
-            if (emptyState) emptyState.style.display = 'flex';
-            return;
+            // Fallback si la Base de données n'est pas encore instanciée ou vide
+            const MOCK_TEAM = [
+                { id: 'PRO-001', name: 'Marc Dupont', role: 'Kinésithérapeute', initial: 'M', color: '#7B1535' },
+                { id: 'PRO-002', name: 'Dr. Sarah Chen', role: 'Médecin traitant', initial: 'S', color: '#436653' },
+                { id: 'PRO-003', name: 'Sophie Martin', role: 'Auxiliaire de vie', initial: 'S', color: '#3B82F6' },
+                { id: 'DEMO-2026', name: 'Emma Dubois', role: 'Famille — Fille', initial: 'E', color: '#8B5CF6' },
+            ];
+            contacts = MOCK_TEAM;
+            console.warn("Utilisation de la MOCK_TEAM car Firestore a retourné 0 contact.");
         }
 
         if (emptyState) emptyState.style.display = 'none';
-
-        // Nettoyer et reconstruire
         container.innerHTML = '';
+
         contacts.forEach(contact => {
+            // Pour l'instant pas de 'lastMsg' lu dynamiquement car on ne fait pas de jointure complexe ici,
+            // on l'ajoute plus tard ou on laisse vide.
             const item = document.createElement('div');
             item.className = 'chat-item';
-            item.dataset.name = contact.name;
-            item.dataset.role = contact.role;
+            item.dataset.id = contact.id;
             item.innerHTML = `
                 <div class="chat-avatar" style="background:${contact.color}; color:white; font-weight:800; font-size:16px;">${contact.initial}</div>
                 <div class="chat-content">
@@ -199,10 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h4>${contact.name}</h4>
                     </div>
                     <p>${contact.role}</p>
-                    <p style="margin-top:3px; font-size:11px; color:var(--on-surface-variant); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${contact.lastMsg}</p>
+                    <p style="margin-top:3px; font-size:11px; color:var(--on-surface-variant); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Appuyez pour ouvrir la discussion</p>
                 </div>
             `;
-            item.addEventListener('click', () => openChatRoom(contact));
+            item.addEventListener('click', () => openChatRoom(contact, patientId));
             container.appendChild(item);
         });
 
@@ -211,18 +411,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newMsgBtn) newMsgBtn.addEventListener('click', () => openNewChatModal());
     }
 
-    function openChatRoom(contact) {
+    function openChatRoom(contact, patientId) {
         chatListView.classList.remove('active');
         chatRoomView.classList.add('active');
         document.getElementById('current-chat-title').innerText = contact.name;
         document.getElementById('current-chat-subtitle').innerText = contact.role;
+        
+        currentContactId = contact.id;
+        loadRealtimeChat(patientId, contact.id, contact.name);
+    }
+
+    function loadRealtimeChat(patientId, contactId, contactName) {
         const chatMessages = document.getElementById('chat-messages');
-        chatMessages.innerHTML = `
-            <div class="message received">
-                <div class="sender-info">${contact.name} — Hier</div>
-                <div class="bubble">${contact.lastMsg}</div>
-            </div>
-        `;
+        chatMessages.innerHTML = '<div style="text-align:center; padding:10px; font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Chat sécurisé</div>';
+
+        // L'identifiant "Room" classique (trie les IDs par ordre alphabétique pour être unique entre 2 personnes sur ce patient)
+        const myId = roleSelect.value; // ex: 'kine' par défaut, on va simuler. L'idéal est le vrai UID.
+        // En démo, l'identifiant local est souvent fictif. Utilisons l'input du `roleSelect` pour identifier "moi"
+        const me = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+        
+        // Simuler un ID de conversation unique pour la paire (contactId / myId) sans se soucier de l'ordre pour ce MVP simplifié
+        const roomId = "chat_" + patientId + "_" + contactId;
+
+        if (currentChatListener) currentChatListener();
+
+        currentChatListener = db.collection('chat_messages')
+            .where('roomId', '==', roomId)
+            .orderBy('createdAt', 'asc')
+            .onSnapshot(snapshot => {
+                // On vide seulement avant le premier render ? Non, on va iterer les changes.
+                // Pour faire simple dans le chat: on re-renderise tout si y a un truc pour éviter des doublons complexes. (MVP)
+                // Retirer tout sauf le header lock
+                chatMessages.innerHTML = '<div style="text-align:center; padding:10px; font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Chat sécurisé</div>';
+                
+                if (snapshot.empty) {
+                    const empty = document.createElement('div');
+                    empty.style = "text-align:center; padding:20px; font-size:12px; opacity:0.6;";
+                    empty.innerText = "Aucun message. Commencez la discussion.";
+                    chatMessages.appendChild(empty);
+                } else {
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        const isMe = data.senderName === me;
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = isMe ? 'message sent' : 'message received';
+                        
+                         let timeDisplay = "";
+                         if(data.createdAt) {
+                             const d = data.createdAt.toDate();
+                             timeDisplay = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+                         }
+
+                        msgDiv.innerHTML = `
+                            <div class="sender-info">${data.senderName} — ${timeDisplay}</div>
+                            <div class="bubble">${data.text}</div>
+                        `;
+                        chatMessages.appendChild(msgDiv);
+                    });
+                }
+                setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 50);
+            });
     }
 
     function openNewChatModal() {
@@ -230,8 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.classList.remove('hidden');
     }
 
-    // Initialiser la liste chat
-    renderChatList();
+    /* Initialisation différée si firebase charge (on l'appelle aussi quand le tab chat est cliqué) */
+    setTimeout(() => { renderChatList() }, 1000);
 
     /* --- CHAT ROOM BUTTONS --- */
     const backBtn = document.getElementById('back-btn');
@@ -254,16 +502,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const messageInput = document.getElementById('message-input');
     if(sendBtn && messageInput) {
-        sendBtn.addEventListener('click', () => {
+        sendBtn.addEventListener('click', async () => {
             const text = messageInput.value.trim();
             if (text !== '') {
-                const chatMessages = document.getElementById('chat-messages');
-                const msg = document.createElement('div');
-                msg.className = 'message sent';
-                msg.innerHTML = `<div class="sender-info">Vous — À l'instant</div><div class="bubble">${text}</div>`;
-                chatMessages.appendChild(msg);
+                const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+                const meId = roleSelect.value;
+                const meName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+                const roomId = "chat_" + patientId + "_" + (currentContactId || "unknown");
+
+                // Nettoyer localement avant d'attendre firebase pour de la fluidité (optionnel, mais on efface l'input au moins)
                 messageInput.value = '';
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                try {
+                    await db.collection('chat_messages').add({
+                        roomId: roomId,
+                        patientId: patientId,
+                        participants: [meId, currentContactId],
+                        senderId: meId,
+                        senderName: meName,
+                        text: text,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch(e) {
+                    console.error("Erreur d'envoi du message privé:", e);
+                    alert("Impossible d'envoyer le message.");
+                }
             }
         });
         messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendBtn.click(); });
@@ -328,51 +591,152 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function publishToFeed(actionText, imageUrl) {
+    /* --- FIREBASE: LECTURE DU FLUX EN TEMPS RÉEL --- */
+    let fluxListener = null;
+
+    function formatTime(dateObj) {
+        if(!dateObj) return "À l'instant";
+        const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    }
+
+    function loadRealtimeFeed(patientId) {
         const fluxFeed = document.getElementById('flux-feed');
+        if(fluxListener) fluxListener(); // Stop previous listener
+
+        fluxListener = db.collection('posts')
+            .where('patientId', '==', patientId)
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snapshot => {
+                // Retirer le message "vide"
+                const emptyMsg = fluxFeed.querySelector('.empty-msg, [style*="text-align:center"]');
+                if (emptyMsg) emptyMsg.remove();
+
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        renderRealtimePost(change.doc, fluxFeed, true);
+                    }
+                    if (change.type === 'modified') {
+                        // Le doc a été mis à jour (ex: visibilité changée)
+                        const oldPost = document.getElementById('post-' + change.doc.id);
+                        if (oldPost) {
+                            oldPost.remove();
+                            // Pour simplifier on le recrée (dans une vraie app, on mettrait juste à jour les classes)
+                            renderRealtimePost(change.doc, fluxFeed, false);
+                        }
+                    }
+                    if (change.type === 'removed') {
+                        const oldPost = document.getElementById('post-' + change.doc.id);
+                        if(oldPost) oldPost.remove();
+                    }
+                });
+                
+                if(fluxFeed.children.length === 0) {
+                    fluxFeed.innerHTML = `
+                        <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+                            <i class="fa-regular fa-newspaper" style="font-size:32px; margin-bottom:12px; display:block; opacity:0.4;"></i>
+                            <p style="font-size:13px;">Aucun message dans le flux pour le moment.</p>
+                            <p style="font-size:11px; margin-top:4px; opacity:0.7;">Les publications de l'équipe soignante apparaîtront ici.</p>
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    function renderRealtimePost(docSnap, container, isNewAdd) {
+        const data = docSnap.data();
         const role = roleSelect.value;
-        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
-        const titleJob = roleSelect.options[roleSelect.selectedIndex].text;
+        const postId = docSnap.id;
 
-        const isUrgent = actionText.startsWith('⚠️ URGENT');
-        const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
-        const tagClass = isUrgent ? 'tag-urgent' : isMedical ? 'tag-medical' : 'tag-team';
-        const tagName  = isUrgent ? '⚠️ URGENT' : isMedical ? 'MÉDICAL' : 'MÉDICAL & FAMILLE';
+        // Filtre d'affichage côté client selon le rôle
+        // Si je suis family, je ne vois pas les posts 'medical'
+        // Si je suis auxiliaire, je ne vois pas les posts 'medical' non plus (en théorie, à ajuster)
+        if (data.visibility === 'medical' && (role === 'family' || role === 'auxiliaire')) {
+            return; 
+        }
 
-        const now = new Date();
-        const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
+        const tagMap = {
+            'public':   { cls: 'tag-sys',     label: 'PUBLIC' },
+            'medical':  { cls: 'tag-medical', label: 'MÉDICAL' },
+            'medifam':  { cls: 'tag-team',    label: 'MÉDICAL & FAMILLE' },
+            'family':   { cls: 'tag-family',  label: 'FAMILLE UNIQUEMENT' },
+            'urgent':   { cls: 'tag-urgent',  label: '⚠️ URGENT' }
+        };
+        const visKey = data.isUrgent ? 'urgent' : (data.visibility || 'medifam');
+        const tagInfo = tagMap[visKey];
 
-        const imageHTML = imageUrl ? `<img class="post-image" src="${imageUrl}" alt="Photo">` : '';
+        const timeStr = formatTime(data.createdAt);
+        const imageHTML = data.imageUrl ? `<img class="post-image" src="${data.imageUrl}" alt="Photo">` : '';
 
-        const isMedPost = isMedical ? ' medical-only-post' : '';
+        const isMedPost = (data.visibility === 'medical') ? ' medical-only-post' : '';
+
         const post = document.createElement('div');
+        post.id = 'post-' + postId;
+        post.dataset.postid = postId; // Sauvegarde ID
         post.className = 'feed-post' + isMedPost;
+        
         post.innerHTML = `
             <div class="post-header">
-                <div class="post-avatar">${roleName.charAt(0)}</div>
+                <div class="post-avatar">${(data.authorName || 'S').charAt(0)}</div>
                 <div class="post-meta">
-                    <h4>${titleJob}</h4>
+                    <h4>${data.authorName} (${data.authorRole})</h4>
                     <p>${timeStr}</p>
                 </div>
-                <span class="visibility-tag ${tagClass}" title="Cliquer pour changer la visibilité">${tagName}</span>
+                <span class="visibility-tag ${tagInfo.cls}" title="Cliquer pour changer la visibilité">${tagInfo.label}</span>
             </div>
             ${imageHTML}
-            <div class="post-content"><p>${actionText}</p></div>
+            <div class="post-content"><p>${data.text}</p></div>
             <div class="post-comments"></div>
             <div class="post-actions">
                 <button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>
             </div>
         `;
+
         bindPostActions(post);
         bindVisibilityTag(post);
 
-        post.style.opacity = '0';
-        fluxFeed.insertBefore(post, fluxFeed.firstChild);
-        setTimeout(() => post.style.opacity = '1', 50);
+        // Insertion selon la date ? En réalité on met au début
+        if (isNewAdd) {
+            post.style.opacity = '0';
+            container.insertBefore(post, container.firstChild);
+            setTimeout(() => post.style.opacity = '1', 50);
+        } else {
+            // Dans le cas d'une modification, on append direct pour l'instant
+            container.appendChild(post);
+        }
+    }
 
-        // Retirer le message "vide"
-        const emptyMsg = fluxFeed.querySelector('.empty-msg, [style*="text-align:center"]');
-        if (emptyMsg) emptyMsg.remove();
+    /* --- FIREBASE: ÉCRITURE AU FLUX --- */
+    async function publishToFeed(actionText, imageUrl) {
+        const role = roleSelect.value;
+        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+        const titleJob = roleSelect.options[roleSelect.selectedIndex].text.split('(')[1]?.replace(')','') || role;
+
+        const isUrgent = actionText.startsWith('⚠️ URGENT');
+        const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
+        
+        let visibility = 'medifam';
+        if (isUrgent) visibility = 'urgent';
+        else if (isMedical) visibility = 'medical';
+
+        const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+
+        try {
+            await db.collection('posts').add({
+                patientId: patientId,
+                authorName: roleName,
+                authorRole: titleJob,
+                text: actionText,
+                visibility: visibility,
+                isUrgent: isUrgent,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                imageUrl: imageUrl || null
+            });
+            // Pas besoin d'ajouter manuellement au DOM, le listener s'en charge !
+        } catch(e) {
+            console.error("Erreur publication: ", e);
+            alert("Erreur réseau: impossible de poster pour le moment.");
+        }
     }
 
     /* --- VISIBILITY TAG — CHANGEMENT DE CATÉGORIE --- */
@@ -398,17 +762,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.createElement('button');
                 btn.className = 'vis-option';
                 btn.innerHTML = `<i class="fa-solid ${opt.icon}"></i> ${opt.label}`;
-                btn.addEventListener('click', () => {
-                    // Retirer toutes les classes tag-*
-                    tag.className = `visibility-tag ${opt.cls}`;
-                    tag.textContent = opt.label;
-                    popup.remove();
-                    // Mettre à jour la classe medical-only-post si besoin
-                    if (opt.key === 'medical') {
-                        post.classList.add('medical-only-post');
+                btn.addEventListener('click', async () => {
+                    const postId = post.dataset.postid;
+                    if (postId) {
+                        try {
+                            await db.collection('posts').doc(postId).update({
+                                visibility: opt.key
+                            });
+                            // Le onSnapshot s'occupera de mettre à jour le DOM !
+                        } catch (err) {
+                            console.error("Erreur mise à jour visibilité: ", err);
+                            alert("Impossible de modifier la visibilité.");
+                        }
                     } else {
-                        post.classList.remove('medical-only-post');
+                        // Fallback pour anciens posts non-firebase (si besoin, temporaire)
+                        tag.className = `visibility-tag ${opt.cls}`;
+                        tag.textContent = opt.label;
+                        if (opt.key === 'medical') {
+                            post.classList.add('medical-only-post');
+                        } else {
+                            post.classList.remove('medical-only-post');
+                        }
                     }
+                    popup.remove();
                 });
                 popup.appendChild(btn);
             });
@@ -581,11 +957,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- NEW PAIN & VITALS LOGIC --- */
+    /* --- NEW PAIN & VITALS LOGIC (FIREBASE) --- */
 
     const addVitalsBtn = document.getElementById('add-vitals-btn');
     if(addVitalsBtn) {
-        addVitalsBtn.addEventListener('click', () => {
+        addVitalsBtn.addEventListener('click', async () => {
             if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
                 alert("Erreur de droits : Impossible d'ajouter des constantes.");
                 return;
@@ -597,51 +973,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const temperature = prompt("Saisir la Température (°C, ex: 37.2) :");
             if(!temperature) return;
 
-            // Sauvegarde dans Firebase
             const session = MonacoCare.getSession();
             const patientId = session?.patientId || 'patient-demo';
-            const reporterName = session?.displayName || session?.proId || "Utilisateur Démo";
-            const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+            const reporterName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
 
-            if (MonacoCare.admin && MonacoCare.admin.addVital) {
-                MonacoCare.admin.addVital(patientId, {
-                    heartRate, bloodPress, temperature, reporterName, reporterRole: roleName
+            try {
+                const batch = db.batch();
+                
+                // Tension
+                batch.set(db.collection('medical_vitals').doc(), {
+                    patientId, type: 'Tension Artérielle', value: bloodPress, unit: 'mmHg',
+                    status: 'normal', createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+                // Pouls
+                batch.set(db.collection('medical_vitals').doc(), {
+                    patientId, type: 'Rythme Cardiaque', value: heartRate, unit: 'bpm',
+                    status: 'normal', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // Température
+                const tempNum = parseFloat(temperature.replace(',', '.'));
+                const tStatus = tempNum >= 38.0 ? 'alert' : (tempNum <= 36.0 ? 'alert' : 'normal');
+                batch.set(db.collection('medical_vitals').doc(), {
+                    patientId, type: 'Température', value: temperature.replace(',', '.'), unit: '°C',
+                    status: tStatus, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await batch.commit();
+
+                // Ajouter automatiquement une note clinique de tracé
+                if (typeof appendClinicalNote === 'function') {
+                    appendClinicalNote(`Relevé de constantes : TA ${bloodPress} | Pouls ${heartRate} | Temp. ${temperature.replace(',','.')}°C.`);
+                }
+            } catch(e) {
+                console.error("Erreur enregistrement constantes", e);
             }
-
-            const tempNum = parseFloat(temperature.replace(',', '.'));
-            const tempStatus = tempNum >= 38.0 ? 'red' :
-                               tempNum <= 36.0 ? 'silver' : 'stable';
-            const tempAlert  = tempNum >= 38.5 ? ' ⚠ Fièvre' :
-                               tempNum >= 38.0 ? ' Subfébrile' :
-                               tempNum <= 36.0 ? ' Hypothermie' : ' Normal';
-
-            const grid = document.querySelector('.vitals-grid');
-            const now = new Date();
-            const ts = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-
-            grid.innerHTML = `
-                <div class="vital-card red">
-                    <div class="vital-icon"><i class="fa-solid fa-heart-pulse"></i> Tension Art.</div>
-                    <div class="vital-value" style="margin:5px 0;">${bloodPress}<span>mmHg</span></div>
-                    <div class="vital-graph"><i class="fa-solid fa-chart-line"></i> (Mise à jour)</div>
-                    <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à ${ts}</div>
-                </div>
-                <div class="vital-card silver">
-                    <div class="vital-icon"><i class="fa-solid fa-heart-pulse"></i> Rythme Cardiaque</div>
-                    <div class="vital-value" style="margin:5px 0;">${heartRate}<span>bpm</span></div>
-                    <div class="vital-graph stable">Nouveau relevé</div>
-                    <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à ${ts}</div>
-                </div>
-                <div class="vital-card" style="background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(249,115,22,0.08)); border:1px solid rgba(251,146,60,0.3);">
-                    <div class="vital-icon"><i class="fa-solid fa-temperature-half" style="color:#F97316;"></i> Température</div>
-                    <div class="vital-value" style="margin:5px 0; color:#F97316;">${temperature.replace(',','.')}<span>°C</span></div>
-                    <div class="vital-graph ${tempStatus}" style="color:${tempNum>=38.0?'#EF4444':tempNum<=36.0?'#3B82F6':'#10B981'};">${tempAlert}</div>
-                    <div class="vital-time"><i class="fa-regular fa-clock"></i> Pris à ${ts}</div>
-                </div>
-            `;
-            if(typeof appendClinicalNote === 'function')
-                appendClinicalNote(`Constantes : TA ${bloodPress} mmHg, Pouls ${heartRate} bpm, Temp. ${temperature}°C${tempAlert}.`);
         });
     }
 
@@ -665,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if(savePainBtn) {
-        savePainBtn.addEventListener('click', () => {
+        savePainBtn.addEventListener('click', async () => {
             const locInput = document.getElementById('pain-location-input').value.trim();
             let scoreInput = parseInt(document.getElementById('pain-score-input').value);
             
@@ -673,31 +1038,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(scoreInput < 0) scoreInput = 0;
                 if(scoreInput > 10) scoreInput = 10;
                 
-                const trackersContainer = document.querySelector('.pain-trackers');
-                const bgColor = scoreInput > 5 ? 'var(--monaco-red)' : '#F59E0B';
-                
-                const newPainCard = document.createElement('div');
-                newPainCard.className = 'pain-card';
-                newPainCard.innerHTML = `
-                    <div class="pain-header">
-                        <span>${locInput}</span>
-                        <span class="pain-score" style="color:${bgColor}">${scoreInput}/10</span>
-                    </div>
-                    <div class="pain-bar" style="background-color: var(--silver-dark); height: 6px; border-radius: 3px; overflow:hidden;">
-                        <div style="width: ${scoreInput}0%; height: 100%; background-color: ${bgColor};"></div>
-                    </div>
-                    <div class="pain-time"><i class="fa-regular fa-clock"></i> À l'instant</div>
-                `;
-                
-                trackersContainer.appendChild(newPainCard);
-                
-                // Close and reset
-                document.getElementById('pain-location-input').value = '';
-                document.getElementById('pain-score-input').value = '';
-                addPainModal.classList.add('hidden');
-                
-                // Auto append a clinical note
-                appendClinicalNote(`Évaluation ajoutée : Douleur à l'emplacement "${locInput}" estimée à ${scoreInput}/10.`);
+                const session = MonacoCare.getSession();
+                const patientId = session?.patientId || 'patient-demo';
+                const reporterName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+                const roleName = "Équipe Soignante"; // Simplification MVP
+
+                try {
+                    await db.collection('medical_pain').add({
+                        patientId,
+                        location: locInput,
+                        level: scoreInput,
+                        authorName: reporterName,
+                        authorRole: roleName,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Cacher et reset
+                    document.getElementById('pain-location-input').value = '';
+                    document.getElementById('pain-score-input').value = '';
+                    addPainModal.classList.add('hidden');
+                    
+                    // Auto append a clinical note (Optionnel, on peut le faire pour tracker)
+                    if(typeof appendClinicalNote === 'function') {
+                        appendClinicalNote(`Évaluation ajoutée : Douleur à l'emplacement "${locInput}" estimée à ${scoreInput}/10.`);
+                    }
+                } catch(e) {
+                    console.error("Erreur évaluation douleur:", e);
+                }
             }
         });
     }
@@ -896,22 +1263,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeBtn = document.getElementById('type-btn');
     const clinicalNotesContainer = document.getElementById('clinical-notes-container');
 
-    function appendClinicalNote(text) {
+    window.appendClinicalNote = async function(text) {
         const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0]; 
-        const now = new Date();
-        const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-        
-        const newNote = document.createElement('div');
-        newNote.className = 'clinical-note';
-        newNote.style.borderLeftColor = 'var(--tag-public)'; // Different color for new notes
-        newNote.innerHTML = `
-            <strong>Aujourd'hui, ${timeStr} - ${roleName}</strong>
-            <p>${text}</p>
-        `;
-        
-        // prepend it
-        clinicalNotesContainer.insertBefore(newNote, clinicalNotesContainer.firstChild);
-    }
+        const session = MonacoCare.getSession();
+        const patientId = session?.patientId || 'patient-demo';
+
+        try {
+            await db.collection('medical_notes').add({
+                patientId,
+                content: text,
+                authorName: roleName,
+                authorRole: "Équipe Soignante",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch(e) {
+            console.error("Erreur enregistrement de la note:", e);
+        }
+    };
 
     if(dictateBtn) {
         dictateBtn.addEventListener('click', () => {
@@ -1011,35 +1379,70 @@ document.addEventListener('DOMContentLoaded', () => {
         headerDropdown.addEventListener('click', e => e.stopPropagation());
     }
 
+    // Gestion du Select Patient
+    const ddSelectPatient = document.getElementById('dd-select-patient');
+    const selectPatientModal = document.getElementById('select-patient-modal');
+    if (ddSelectPatient && selectPatientModal) {
+        ddSelectPatient.addEventListener('click', () => {
+            headerDropdown.classList.add('hidden');
+            selectPatientModal.classList.remove('hidden');
+            
+            const listContainer = document.getElementById('patients-list-container');
+            const role = roleSelect.value;
+            // Mode Démo: Mock de patients
+            let patients = [];
+            if(role === 'family') {
+                patients = [{id: 'patient-demo', name: 'Robert Dubois'}, {id: 'PAT-002', name: 'Jeanne Dubois'}];
+            } else {
+                patients = [{id: 'patient-demo', name: 'Robert Dubois'}, {id: 'PAT-003', name: 'Alice Martin'}];
+            }
+
+            listContainer.innerHTML = '';
+            patients.forEach(p => {
+                const btn = document.createElement('button');
+                btn.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; padding:12px; border:1px solid #ddd; border-radius:8px; cursor:pointer;";
+                btn.innerHTML = `<span style="font-weight:600; font-size:14px; color:var(--text-dark);">${p.name}</span> <i class="fa-solid fa-chevron-right" style="color:var(--monaco-red); font-size:12px;"></i>`;
+                
+                btn.addEventListener('click', () => {
+                    MonacoCare.switchPatient(p.id, p.name);
+                });
+                
+                listContainer.appendChild(btn);
+            });
+        });
+    }
+
+    // Gestion du Add Patient
+    const ddAddPatient = document.getElementById('dd-add-patient');
+    const addPatientModal = document.getElementById('add-patient-modal');
+    if (ddAddPatient && addPatientModal) {
+        ddAddPatient.addEventListener('click', () => {
+            headerDropdown.classList.add('hidden');
+            addPatientModal.classList.remove('hidden');
+        });
+    }
+
     // Paramètres (ouvre le modal existant)
     const ddSettings = document.getElementById('dd-settings');
     if (ddSettings && settingsModal) {
         ddSettings.addEventListener('click', () => {
             headerDropdown.classList.add('hidden');
             const role = roleSelect.value;
-            const secPatient = document.getElementById('settings-add-patient-section');
             const secPro     = document.getElementById('settings-add-pro-section');
-            const secSub     = document.getElementById('settings-sub-section');
             const secInv     = document.getElementById('settings-invitations-section');
             const invList    = document.getElementById('pending-invitations-list');
+            
             if (role === 'family') {
-                if(secPatient) secPatient.style.display = 'block';
                 if(secPro)     secPro.style.display = 'block';
-                if(secSub)     secSub.style.display = 'block';
                 if(secInv)     secInv.style.display = 'block';
-                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Aucune demande en attente.</p>';
+                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Chargement des demandes...</p>';
             } else {
-                if(secPatient) secPatient.style.display = 'block';
                 if(secPro)     secPro.style.display = 'none';
-                if(secSub)     secSub.style.display = 'none';
                 if(secInv)     secInv.style.display = 'block';
-                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Aucune invitation en attente.</p>';
+                if(invList)    invList.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">Chargement des invitations...</p>';
             }
             settingsModal.classList.remove('hidden');
         });
-    }
-    if (closeSettingsModal) {
-        closeSettingsModal.addEventListener('click', () => settingsModal.classList.add('hidden'));
     }
 
     // Déconnexion
@@ -1051,34 +1454,145 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Add Patient/Beneficiary Logic
-    const addPatientBtn = document.getElementById('add-patient-btn');
-    const newPatientName = document.getElementById('new-patient-name');
-    if (addPatientBtn) {
-        addPatientBtn.addEventListener('click', () => {
-            if(newPatientName.value.trim() !== "") {
-                alert(`Le dossier pour le bénéficiaire "${newPatientName.value}" a été créé avec succès. Vous pouvez maintenant y ajouter des professionnels médicaux.`);
-                newPatientName.value = '';
-                document.getElementById('new-patient-id').value = '';
-            } else {
-                alert("Veuillez saisir le nom complet du bénéficiaire.");
+    // === PHASE 4: GESTION MULTI-PATIENTS ET INVITATIONS ===
+
+    // 1. Envoyer une demande d'accès à un patient (Pro -> Famille)
+    const sendPatientRequestBtn = document.getElementById('send-patient-request-btn');
+    if (sendPatientRequestBtn) {
+        sendPatientRequestBtn.addEventListener('click', async () => {
+            const lastName = document.getElementById('link-patient-lastname').value.trim();
+            const patientId = document.getElementById('link-patient-id').value.trim();
+            
+            if(!lastName || !patientId) {
+                alert("Veuillez saisir le nom de famille et l'identifiant du patient.");
+                return;
+            }
+
+            const simulatedUserId = roleSelect.value;
+            
+            try {
+                await db.collection('requests').add({
+                    fromId: simulatedUserId,
+                    fromRole: 'pro',
+                    type: 'access_request',
+                    targetPatientId: patientId,
+                    targetLastName: lastName,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert(`Demande d'accès envoyée au responsable du dossier de "${lastName}".`);
+                document.getElementById('link-patient-lastname').value = '';
+                document.getElementById('link-patient-id').value = '';
+                document.getElementById('add-patient-modal').classList.add('hidden');
+            } catch (err) {
+                console.error("Erreur lors de l'envoi :", err);
+                alert("Une erreur est survenue.");
             }
         });
     }
 
-    // Add Pro via ID Logic
-    const addProBtn = document.getElementById('add-pro-btn');
-    const proUniqueId = document.getElementById('pro-unique-id');
-    if (addProBtn) {
-        addProBtn.addEventListener('click', () => {
-            if(proUniqueId.value.trim() !== "") {
-                alert(`Le professionnel lié à l'identifiant ${proUniqueId.value} a été rattaché à ce dossier de soins. Il pourra y accéder lors de sa prochaine connexion.`);
-                proUniqueId.value = '';
-            } else {
-                alert("Veuillez saisir l'identifiant unique du professionnel.");
+    // 2. Inviter un pro (Famille -> Pro)
+    const sendProInviteBtn = document.getElementById('send-pro-invite-btn');
+    if (sendProInviteBtn) {
+        sendProInviteBtn.addEventListener('click', async () => {
+            const lastName = document.getElementById('pro-invite-lastname').value.trim();
+            const proId = document.getElementById('pro-invite-id').value.trim();
+            const session = MonacoCare.getSession();
+            const patientId = session?.patientId || 'patient-demo'; 
+            
+            if(!lastName || !proId) {
+                alert("Veuillez remplir tous les champs.");
+                return;
+            }
+
+            try {
+                await db.collection('requests').add({
+                    fromId: patientId,
+                    fromRole: 'family',
+                    type: 'pro_invite',
+                    targetProId: proId,
+                    targetLastName: lastName,
+                    status: 'pending',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert(`Invitation envoyée au professionnel "${lastName}". Il pourra l'accepter lors de sa connexion.`);
+                document.getElementById('pro-invite-lastname').value = '';
+                document.getElementById('pro-invite-id').value = '';
+            } catch (err) {
+                console.error("Erreur d'invitation :", err);
             }
         });
     }
+
+    // 3. Écoute temps-réel des demandes (Boîte de réception)
+    let requestsUnsubscribe = null;
+
+    window.listenToRequests = function() {
+        if(requestsUnsubscribe) requestsUnsubscribe();
+        
+        const role = roleSelect.value;
+        const invList = document.getElementById('pending-invitations-list');
+        if(!invList) return;
+
+        let query = null;
+        if(role === 'family') {
+            const patientId = MonacoCare.getSession()?.patientId || 'patient-demo'; // Dans un cas réel lié au compte famille
+            query = db.collection('requests')
+                      .where('type', '==', 'access_request')
+                      //.where('targetPatientId', '==', patientId) // Simplifié pour la démo
+                      .where('status', '==', 'pending');
+        } else {
+            const myProId = role;
+            query = db.collection('requests')
+                      .where('type', '==', 'pro_invite')
+                      //.where('targetProId', '==', myProId) // Simplifié pour la démo
+                      .where('status', '==', 'pending');
+        }
+
+        requestsUnsubscribe = query.onSnapshot(snapshot => {
+            invList.innerHTML = '';
+            if(snapshot.empty) {
+                invList.innerHTML = `<p style="font-size:12px;color:var(--text-muted);"><i class="fa-solid fa-check"></i> Vous êtes à jour.</p>`;
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const req = doc.data();
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.03); padding:8px 12px; border-radius:8px; margin-bottom: 5px;";
+                
+                let text = "";
+                if(req.type === 'access_request') {
+                    const proName = req.fromId.toUpperCase();
+                    text = `Le compte pro <b>${proName}</b> demande l'accès pour M./Mme ${req.targetLastName}.`;
+                } else {
+                    text = `La famille Dubois vous a invité au dossier du patient <b>${req.fromId}</b>.`;
+                }
+
+                div.innerHTML = `
+                    <p style="font-size:11px; margin:0; line-height:1.4; flex:1; padding-right:10px;">${text}</p>
+                    <div style="display:flex; gap:5px; flex-shrink:0;">
+                        <button style="padding:6px; background:#10B981; color:white; border:none; border-radius:6px; cursor:pointer;" data-id="${doc.id}" class="acc-btn"><i class="fa-solid fa-check"></i></button>
+                        <button style="padding:6px; background:#EF4444; color:white; border:none; border-radius:6px; cursor:pointer;" data-id="${doc.id}" class="rej-btn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `;
+                invList.appendChild(div);
+            });
+
+            invList.querySelectorAll('.acc-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    await db.collection('requests').doc(id).update({status: 'accepted'});
+                });
+            });
+            invList.querySelectorAll('.rej-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    await db.collection('requests').doc(id).update({status: 'rejected'});
+                });
+            });
+        });
+    };
 
     // Subscription Payment Logic
     const paySubBtn = document.getElementById('pay-sub-btn');
@@ -1087,5 +1601,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Redirection vers la passerelle de paiement (Stripe) pour gérer la carte bancaire et choisir votre formule d'abonnement...");
         });
     }
+
+    // On lance l'écoute des requêtes au démarrage ou lors du changement de vue
+    listenToRequests();
 
 });

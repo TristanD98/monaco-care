@@ -325,18 +325,52 @@ const MonacoCare = (() => {
                 batch.set(db.collection('patients').doc('patient-demo'), {
                     name: 'Jean-Pierre DUBOIS', patientId: 'patient-demo', firstName: 'Jean-Pierre',
                     lastName: 'DUBOIS', dateOfBirth: '1947-03-12', address: '12 Avenue de la Costa, Monaco',
-                    age: 78, assignedPros: ['PRO-001'], assignedFamilyCodes: ['DEMO-2026'],
+                    age: 78, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003'], assignedFamilyCodes: ['DEMO-2026'],
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 batch.set(db.collection('demo_codes').doc('DEMO-2026'), {
-                    active: true, patientId: 'patient-demo', label: 'Famille de démonstration (Créé automatiquement)',
+                    active: true, patientId: 'patient-demo', label: 'Famille (Code DEMO-2026)',
+                    name: 'Emma Dubois', // Ajout d'un nom pour le chat
+                    role: 'Famille — Fille',
                     expiresAt: new Date(Date.now() + 365 * 864e5).toISOString()
                 });
+                // Ajouter les pros de l'équipe
+                batch.set(db.collection('professionals').doc('PRO-001'), {
+                    name: 'Tristan', role: 'Kinésithérapeute', status: 'active', color: '#7B1535'
+                });
+                batch.set(db.collection('professionals').doc('PRO-002'), {
+                    name: 'Dr. Sarah Martin', role: 'Médecin Généraliste', status: 'active', color: '#315141'
+                });
+                batch.set(db.collection('professionals').doc('PRO-003'), {
+                    name: 'Sophie Laurent', role: 'Auxiliaire de vie', status: 'active', color: '#3B82F6'
+                });
+
+                // Ajouter un post initial au flux
+                const initialPostRef = db.collection('posts').doc();
+                batch.set(initialPostRef, {
+                    patientId: 'patient-demo',
+                    authorName: 'Système',
+                    authorRole: 'Monaco Care',
+                    text: 'Bienvenue sur le flux d\'actualité partagé de Monaco Care. L\'équipe soignante publiera les mises à jour ici.',
+                    visibility: 'public',
+                    isUrgent: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    imageUrl: null
+                });
+                
                 await batch.commit();
             }
         } catch(e) { console.warn("Seed skipped: ", e); }
     }
     setTimeout(() => { seedDatabaseIfEmpty(); }, 3000);
 
-    return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, admin };
+    function switchPatient(patientId, label) {
+        let s = getSession() || {};
+        s.patientId = patientId;
+        if(label) s.label = label;
+        setSession(s);
+        window.location.reload();
+    }
+
+    return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, switchPatient, admin };
 })();

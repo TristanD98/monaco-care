@@ -34,9 +34,9 @@
                         </button>
                         <!-- Dropdown menu -->
                         <div id="header-dropdown" class="header-dropdown hidden">
-                            <a href="patients.html" class="dropdown-item">
+                            <button class="dropdown-item" id="dd-select-patient">
                                 <i class="fa-solid fa-users"></i> Choisir un patient
-                            </a>
+                            </button>
                             <button class="dropdown-item" id="dd-add-patient">
                                 <i class="fa-solid fa-user-plus"></i> Ajouter un patient
                             </button>
@@ -298,46 +298,71 @@
                     </div>
                 </div>
 
-                <!-- Settings Modal for Main Account -->
+                <!-- Select Patient Modal -->
+                <div id="select-patient-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="margin:0;">Vos dossiers liés</h3>
+                            <button class="icon-btn" onclick="document.getElementById('select-patient-modal').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark); background:transparent;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:15px;">Sélectionnez un patient pour consulter son dossier.</p>
+                        
+                        <div id="patients-list-container" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto; margin-bottom:15px;">
+                            <!-- Injecté par JS -->
+                            <p style="font-size:12px; color:var(--text-muted); text-align:center;">Chargement de vos patients...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Patient Modal (Liaison via Demande) -->
+                <div id="add-patient-modal" class="modal hidden" style="z-index: 2000;">
+                    <div class="modal-content">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="margin:0;">Lier un nouveau dossier</h3>
+                            <button class="icon-btn" onclick="document.getElementById('add-patient-modal').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark); background:transparent;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:15px;">Demandez l'accès au responsable familial du patient. Vous pourrez y accéder une fois votre demande validée.</p>
+                        
+                        <div style="text-align:left; margin-bottom:15px;">
+                            <input type="text" id="link-patient-lastname" placeholder="Nom de famille du patient" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:10px;">
+                            <input type="text" id="link-patient-id" placeholder="Identifiant unique (ex: PATIENT-123)" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:10px;">
+                            <button class="modal-btn" id="send-patient-request-btn" style="margin:0; padding:10px; font-size:13px;">Envoyer la demande d'accès</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Modal for Main Account (Roue Crantée) -->
                 <div id="settings-modal" class="modal hidden" style="z-index: 2000;">
-                    <div class="modal-content" style="height: 90%; max-height: 90%; display: flex; flex-direction: column;">
+                    <div class="modal-content" style="height: 80%; display: flex; flex-direction: column;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-shrink: 0;">
-                            <h3 style="margin:0;">Paramètres du Compte</h3>
+                            <h3 style="margin:0;">Paramètres de confidentialité</h3>
                             <button id="close-settings-modal" class="icon-btn" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark); background:transparent;"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
-                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px;">Gérez vos accès, vos bénéficiaires et votre abonnement en tant que compte principal (Aidant / Tuteur).</p>
-
-                        <!-- Add Patient -->
-                        <div class="vault-section" id="settings-add-patient-section" style="text-align:left; margin-bottom:15px;">
-                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-plus" style="color:var(--monaco-red);"></i> Ajouter un bénéficiaire / patient</h4>
-                            <input type="text" id="new-patient-name" placeholder="Nom complet" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
-                            <input type="text" id="new-patient-id" placeholder="N° Sécurité Sociale (optionnel)" style="width:100%; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:8px;">
-                            <button class="modal-btn" id="add-patient-btn" style="margin:0; padding:10px; font-size:13px;">Créer le dossier du bénéficiaire</button>
-                        </div>
-
+                        
                         <!-- Add Pro via ID -->
                         <div class="vault-section" id="settings-add-pro-section" style="text-align:left; margin-bottom:15px;">
-                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red);"></i> Ajouter un professionnel</h4>
-                            <p style="font-size:11px; margin-bottom:10px; color:var(--text-muted);">Saisissez le N° d'identifiant unique fourni au professionnel lorsqu'il se connecte à l'application.</p>
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-user-doctor" style="color:var(--monaco-red);"></i> Inviter un professionnel</h4>
+                            <p style="font-size:11px; margin-bottom:10px; color:var(--text-muted);">Saisissez l'identifiant pour lui envoyer une demande :</p>
                             <div style="display:flex; gap:8px;">
-                                <input type="text" id="pro-unique-id" placeholder="Ex: PRO-842" style="flex:1; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px;">
-                                <button class="modal-btn" id="add-pro-btn" style="margin:0; padding:10px 15px; width:auto; font-size:13px;">Ajouter</button>
+                                <input type="text" id="pro-invite-lastname" placeholder="Nom de famille" style="flex:1; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px;">
+                                <input type="text" id="pro-invite-id" placeholder="Ex: PRO-842" style="flex:1; padding: 10px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px;">
+                                <button class="modal-btn" id="send-pro-invite-btn" style="margin:0; padding:10px; width:auto; font-size:13px;">Inviter</button>
                             </div>
                         </div>
 
                         <!-- Pending Invitations -->
                         <div class="vault-section" id="settings-invitations-section" style="text-align:left; margin-bottom:15px;">
-                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-bell" style="color:var(--monaco-red);"></i> Demandes d'accès en attente</h4>
+                            <h4 style="margin-bottom:10px; font-size:13px;"><i class="fa-solid fa-bell" style="color:var(--monaco-red);"></i> Demandes d'accès entrantes</h4>
                             <div id="pending-invitations-list" style="display:flex; flex-direction:column; gap:8px;">
                                 <p style="font-size:11px; color:var(--text-muted);">Aucune demande en attente.</p>
                             </div>
                         </div>
 
                         <!-- Bouton Fermer Explicite -->
-                        <button class="modal-btn cancel" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="margin-top: auto; margin-bottom: 0;">Fermer</button>
+                        <button class="modal-btn cancel" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="margin-top: 20px; margin-bottom: 0;">Fermer</button>
                         </div>
-                        </div>
+                    </div>
                 </div>
 
                 <div class="bottom-nav">
