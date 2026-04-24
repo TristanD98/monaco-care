@@ -35,3 +35,16 @@
   2. **Anonymat et Invitations Croisées :** Aucun nom entier ou numéro de sécurité sociale visible. Les demandes se font via un identifiant (Nom de famille + code identifiant unique généré).
   3. **Boîte de Réception Sécurisée :** Quand une demande est faite, elle apparaît dans la modale Paramètres (roue crantée) du receveur. Il peut alors "Accepter" ou "Refuser". Cette interaction est synchronisée en temps réel pour tous les appareils via Firebase.
   4. **Basculement Temps Réel (`switchPatient`) :** Une fois le patient validé, choisir un patient depuis le menu recharge instantanément tous ses modules personnels (Flux, Coffre, Chat) en gardant les données cloisonnées et sécurisées.
+
+### 24 Avril 2026 à 02:30 — HOTFIX : Correction bug critique navigation multi-patients
+- **Le problème signalé :**
+  Après avoir cliqué sur un patient dans "Choisir un patient", plus rien ne fonctionnait : les enregistrements rapides, le menu "3 points" et le chat ne répondaient plus.
+- **La cause racine identifiée :**
+  `switchPatient` sauvegardait la nouvelle session dans `sessionStorage`, mais si une ancienne session existait dans `localStorage`, celle-ci prenait la priorité au rechargement. L'application revenait à l'ANCIEN patient, créant un état incohérent qui faisait planter les initialisations JavaScript.
+- **Ce qu'on a corrigé :**
+  1. **`setSession` corrigée :** Nettoyage explicite de `localStorage` quand la session est en `sessionStorage` pour éviter les conflits.
+  2. **`switchPatient` renforcée :** Écriture dans les DEUX storages avant rechargement, garantissant une lecture cohérente de la session.
+  3. **Navigation propre :** `window.location.reload()` → `window.location.replace(pathname)` pour un rechargement sans paramètres d'URL obsolètes.
+  4. **Cache busting :** `app.js?v=3` pour forcer le rechargement du script chez les utilisateurs.
+- **Commit :** `bc18391` — Déployé sur GitHub → Vercel.
+
