@@ -32,7 +32,15 @@ const MonacoCare = (() => {
     // ── SESSION (Compatibilité avec la UI) ─────────────
     function setSession(data) {
         const s = { ...data, loginAt: new Date().toISOString() };
-        (data.remember ? localStorage : sessionStorage).setItem('mc_session', JSON.stringify(s));
+        const str = JSON.stringify(s);
+        // Toujours écrire dans les deux storages pour garantir la cohérence
+        if (data.remember) {
+            localStorage.setItem('mc_session', str);
+        } else {
+            sessionStorage.setItem('mc_session', str);
+            // Nettoyer localStorage pour éviter les conflits
+            localStorage.removeItem('mc_session');
+        }
     }
     function getSession() {
         try {
@@ -365,11 +373,18 @@ const MonacoCare = (() => {
     setTimeout(() => { seedDatabaseIfEmpty(); }, 3000);
 
     function switchPatient(patientId, label) {
+        // Récupérer la session depuis n'importe quel stockage
         let s = getSession() || {};
         s.patientId = patientId;
         if(label) s.label = label;
-        setSession(s);
-        window.location.reload();
+        const str = JSON.stringify({ ...s, loginAt: new Date().toISOString() });
+
+        // Toujours sauvegarder dans les DEUX stockages pour éviter les conflits de priorité
+        try { localStorage.setItem('mc_session', str); } catch(e) {}
+        try { sessionStorage.setItem('mc_session', str); } catch(e) {}
+
+        // Recharger la page avec un chemin propre (sans query params)
+        window.location.replace(window.location.pathname);
     }
 
     return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, switchPatient, admin };
