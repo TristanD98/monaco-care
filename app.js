@@ -288,48 +288,72 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
             vaultListeners.push(unsubVitals);
-
         }
 
-
-
-        // 2. Douleur — ID fixe par zone, carte cliquable pour mettre à jour
+        // 2. Douleur — ID fixe par zone, carte cliquable, grille 2 colonnes
         const painGrid = document.getElementById('pain-trackers-container');
         if(painGrid) {
             painGrid.innerHTML = '<div style="text-align:center;color:gray;">Chargement...</div>';
-            // Lire tous les docs courants (un par zone, ID fixe)
             const unsubPain = db.collection('medical_pain')
                 .where('patientId', '==', patientId)
                 .onSnapshot(snap => {
                     painGrid.innerHTML = '';
+
                     if (snap.empty) {
-                        painGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                        painGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px; grid-column:1/-1;">
                             <i class="fa-regular fa-face-smile" style="font-size:24px; margin-bottom:8px; display:block;"></i>
-                            Aucune évaluation. Appuyez sur « Ajouter localisation » pour commencer.
+                            Aucune évaluation. Appuyez sur « Ajouter localisation » pour commencer.
                         </div>`;
                         return;
                     }
+
+                    // Garder uniquement le doc le plus récent par zone (gérer les anciens docs)
+                    const byLocation = {};
                     snap.forEach(doc => {
                         const d = doc.data();
+                        const existing = byLocation[d.location];
+                        const newTs = d.createdAt?.seconds ?? 0;
+                        const oldTs = existing?.createdAt?.seconds ?? 0;
+                        if (!existing || newTs >= oldTs) byLocation[d.location] = d;
+                    });
+
+                    // Grille 2 colonnes
+                    painGrid.style.display = 'grid';
+                    painGrid.style.gridTemplateColumns = '1fr 1fr';
+                    painGrid.style.gap = '10px';
+
+                    Object.values(byLocation).forEach(d => {
                         const level = d.level ?? d.score ?? 0;
-                        const scoreClass = level > 7 ? 'high' : (level > 3 ? 'medium' : 'low');
+                        const pct = Math.round((level / 10) * 100);
+                        const barColor = level >= 7 ? '#CE1126' : level >= 4 ? '#F59E0B' : '#10B981';
+
                         const div = document.createElement('div');
-                        div.className = 'pain-item';
-                        div.style.cursor = 'pointer';
+                        div.style.cssText = `
+                            background: white;
+                            border-radius: 12px;
+                            padding: 12px;
+                            box-shadow: 0 2px 8px rgba(89,0,33,0.08);
+                            cursor: pointer;
+                            border: 1px solid rgba(220,192,195,0.3);
+                            transition: transform .15s;
+                        `;
                         div.title = 'Cliquer pour mettre à jour';
                         div.innerHTML = `
-                            <div>
-                                <div style="font-weight:600; font-size:14px; margin-bottom:2px;">${d.location}</div>
-                                <div style="color:var(--text-muted); font-size:12px;">Évaluée par ${d.authorName || '—'}</div>
+                            <div style="font-weight:700; font-size:13px; color:#1c1b1c; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.location}</div>
+                            <div style="font-size:22px; font-weight:800; color:${barColor}; line-height:1; margin-bottom:8px;">${level}<span style="font-size:12px; font-weight:500; color:#897174;">/10</span></div>
+                            <div style="height:5px; border-radius:999px; background:#f0e8e9; overflow:hidden;">
+                                <div style="height:100%; width:${pct}%; background:${barColor}; border-radius:999px; transition:width .4s;"></div>
                             </div>
-                            <div class="pain-score score-${scoreClass}">${level}/10</div>
                         `;
+                        div.addEventListener('mouseenter', () => div.style.transform = 'scale(1.02)');
+                        div.addEventListener('mouseleave', () => div.style.transform = 'scale(1)');
                         div.addEventListener('click', () => promptPainUpdate(d.location));
                         painGrid.appendChild(div);
                     });
                 });
             vaultListeners.push(unsubPain);
         }
+
 
         // 3. Notes Cliniques
         if(showClinicalNotes) {
