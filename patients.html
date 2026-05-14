@@ -110,12 +110,13 @@
 
         function selectPatient(patientId, patientName) {
             // Save selection to pass to index.html
-            const session = JSON.parse(localStorage.getItem('mc_session'));
+            let session = JSON.parse(localStorage.getItem('mc_session')) || JSON.parse(sessionStorage.getItem('mc_session'));
             if(session) {
                 session.patientId = patientId;
                 session.patientName = patientName;
                 session.patientInfo = "ID: " + patientId;
-                localStorage.setItem('mc_session', JSON.stringify(session));
+                if (localStorage.getItem('mc_session')) localStorage.setItem('mc_session', JSON.stringify(session));
+                else sessionStorage.setItem('mc_session', JSON.stringify(session));
             }
             window.location.href = 'index.html?patientId=' + patientId;
         }
@@ -123,10 +124,10 @@
         function loadPatients() {
             const list = document.getElementById('patients-list');
             let html = `
-                <div class="patient-card" onclick="selectPatient('45987301', 'Jean-Pierre DUBOIS')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s;">
-                    <img src="https://i.pravatar.cc/150?u=jeanpierre" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+                <div class="patient-card" onclick="selectPatient('patient-demo', 'Charles Leclerc')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s;">
+                    <img src="https://i.pravatar.cc/150?u=charlesleclerc" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
                     <div style="flex:1;">
-                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">Jean-Pierre DUBOIS</h4>
+                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">Charles Leclerc</h4>
                         <p style="font-size:12px; color:#6B7280;">Dernière act. il y a 2h</p>
                     </div>
                     <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
