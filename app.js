@@ -307,14 +307,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    // Garder uniquement le doc le plus récent par zone (gérer les anciens docs)
+                    // Dédoublonnage : l'ID fixe (patientId_zone) gagne toujours sur les anciens IDs aléatoires
+                    // → élimine le flash causé par serverTimestamp() null lors de l'écriture locale
                     const byLocation = {};
                     snap.forEach(doc => {
                         const d = doc.data();
+                        const expectedId = `${patientId}_${(d.location || '').replace(/\s+/g, '_')}`;
+                        const isFixed = doc.id === expectedId;
                         const existing = byLocation[d.location];
-                        const newTs = d.createdAt?.seconds ?? 0;
-                        const oldTs = existing?.createdAt?.seconds ?? 0;
-                        if (!existing || newTs >= oldTs) byLocation[d.location] = d;
+                        const existingIsFixed = existing?._isFixed || false;
+
+                        if (!existing) {
+                            byLocation[d.location] = { ...d, _isFixed: isFixed };
+                        } else if (isFixed && !existingIsFixed) {
+                            // Le nouveau a un ID fixe, l'ancien non → le nouveau gagne toujours
+                            byLocation[d.location] = { ...d, _isFixed: true };
+                        } else if (!isFixed && existingIsFixed) {
+                            // L'existant a un ID fixe → on garde l'existant
+                        } else {
+                            // Les deux sont du même type → on prend le plus récent
+                            const newTs = d.createdAt?.seconds ?? 0;
+                            const oldTs = existing?.createdAt?.seconds ?? 0;
+                            if (newTs >= oldTs) byLocation[d.location] = { ...d, _isFixed: isFixed };
+                        }
                     });
 
                     // Grille 2 colonnes
