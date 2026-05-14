@@ -1146,19 +1146,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (metric === 'Constantes Vitales') {
-            let q = db.collection('medical_vitals_history')
+            // Pas de orderBy → aucun index composite requis, on trie en JS
+            db.collection('medical_vitals_history')
                 .where('patientId', '==', patientId)
-                .orderBy('createdAt', 'desc')
-                .limit(50);
-            if (since) q = q.startAfter(firebase.firestore.Timestamp.fromDate(since));
-
-            q.get().then(snap => {
+                .get().then(snap => {
                 if (snap.empty) {
                     container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique disponible.<br><small>Les nouvelles saisies seront enregistrées automatiquement.</small></div>';
                     return;
                 }
 
-                // Filtrer par date si nécessaire
+                // Filtrer par date + trier du plus récent au plus ancien en JS
                 let rows = [];
                 snap.forEach(doc => {
                     const d = doc.data();
@@ -1166,6 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (since && ts && ts < since) return;
                     rows.push(d);
                 });
+                rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
                 if (rows.length === 0) {
                     container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucune donnée sur cette période.</div>';
@@ -1204,17 +1202,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             }).catch(e => {
                 console.error('Historique vitaux:', e);
-                container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Erreur de chargement.<br><small>Un index Firebase est peut-être nécessaire. Vérifiez la console.</small></div>';
+                container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Erreur de chargement.</div>';
             });
 
         } else {
-            // Douleur : collection medical_pain
-            let q = db.collection('medical_pain')
+            // Douleur : pas de orderBy → tri en JS
+            db.collection('medical_pain')
                 .where('patientId', '==', patientId)
-                .orderBy('createdAt', 'desc')
-                .limit(50);
+                .get().then(snap => {
 
-            q.get().then(snap => {
                 if (snap.empty) {
                     container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique de douleur.</div>';
                     return;
@@ -1227,6 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (since && ts && ts < since) return;
                     rows.push(d);
                 });
+                rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
                 if (rows.length === 0) {
                     container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucune donnée sur cette période.</div>';
