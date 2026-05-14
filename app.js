@@ -293,36 +293,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-        // 2. Douleur
+        // 2. Douleur — ID fixe par zone, carte cliquable pour mettre à jour
         const painGrid = document.getElementById('pain-trackers-container');
         if(painGrid) {
             painGrid.innerHTML = '<div style="text-align:center;color:gray;">Chargement...</div>';
+            // Lire tous les docs courants (un par zone, ID fixe)
             const unsubPain = db.collection('medical_pain')
                 .where('patientId', '==', patientId)
-                .orderBy('createdAt', 'desc')
-                .limit(5)
                 .onSnapshot(snap => {
-                    if(snap.empty) {
+                    painGrid.innerHTML = '';
+                    if (snap.empty) {
                         painGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
                             <i class="fa-regular fa-face-smile" style="font-size:24px; margin-bottom:8px; display:block;"></i>
-                            Aucune évaluation enregistrée.
+                            Aucune évaluation. Appuyez sur « Ajouter localisation » pour commencer.
                         </div>`;
-                    } else {
-                        painGrid.innerHTML = '';
-                        snap.forEach(doc => {
-                            const d = doc.data();
-                            const div = document.createElement('div');
-                            div.className = 'pain-item';
-                            div.innerHTML = `
-                                <div>
-                                    <div style="font-weight:600; font-size:14px; margin-bottom:2px;">${d.location}</div>
-                                    <div style="color:var(--text-muted); font-size:12px;">Évaluée par ${d.authorName}</div>
-                                </div>
-                                <div class="pain-score score-${d.level > 7 ? 'high' : (d.level > 3 ? 'medium' : 'low')}">${d.level}/10</div>
-                            `;
-                            painGrid.appendChild(div);
-                        });
+                        return;
                     }
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const level = d.level ?? d.score ?? 0;
+                        const scoreClass = level > 7 ? 'high' : (level > 3 ? 'medium' : 'low');
+                        const div = document.createElement('div');
+                        div.className = 'pain-item';
+                        div.style.cursor = 'pointer';
+                        div.title = 'Cliquer pour mettre à jour';
+                        div.innerHTML = `
+                            <div>
+                                <div style="font-weight:600; font-size:14px; margin-bottom:2px;">${d.location}</div>
+                                <div style="color:var(--text-muted); font-size:12px;">Évaluée par ${d.authorName || '—'}</div>
+                            </div>
+                            <div class="pain-score score-${scoreClass}">${level}/10</div>
+                        `;
+                        div.addEventListener('click', () => promptPainUpdate(d.location));
+                        painGrid.appendChild(div);
+                    });
                 });
             vaultListeners.push(unsubPain);
         }
@@ -1061,6 +1065,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const addVitalsBtn = document.getElementById('add-vitals-btn');
     if (addVitalsBtn) addVitalsBtn.style.display = 'none';
 
+    /* --- PAIN: prompt de mise à jour d'une zone existante --- */
+    function promptPainUpdate(location) {
+        const role = roleSelect.value;
+        if (role === 'auxiliaire' || role === 'pro') {
+            alert("Erreur de droits : impossible de modifier une évaluation.");
+            return;
+        }
+        const newScore = prompt(`Mettre à jour la douleur — ${location}\nNouvelle intensité (0 à 10) :`);
+        if (newScore === null || newScore.trim() === '') return;
+        let score = parseInt(newScore);
+        if (isNaN(score)) return;
+        if (score < 0) score = 0;
+        if (score > 10) score = 10;
+
+        const session = MonacoCare.getSession();
+        const patientId = session?.patientId || 'patient-demo';
+        const authorName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+        const docId = `${patientId}_${location.replace(/\s+/g, '_')}`;
+
+        const payload = {
+            patientId,
+            location,
+            level: score,
+            score,   // alias pour compatibilité historique
+            authorName,
+            authorRole: 'Équipe Soignante',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Valeur courante (ID fixe = 1 doc par zone)
+        db.collection('medical_pain').doc(docId).set(payload)
+            .catch(e => console.error('Erreur mise à jour douleur:', e));
+
+        // Historique (auto-ID = accumulation)
+        db.collection('medical_pain_history').add(payload)
+            .catch(e => console.error('Erreur historique douleur:', e));
+    }
 
     const openPainModalBtn = document.getElementById('open-pain-modal-btn');
     const addPainModal = document.getElementById('add-pain-modal');
@@ -1093,29 +1134,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const session = MonacoCare.getSession();
                 const patientId = session?.patientId || 'patient-demo';
                 const reporterName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
-                const roleName = "Équipe Soignante"; // Simplification MVP
+                const docId = `${patientId}_${locInput.replace(/\s+/g, '_')}`;
+
+                const payload = {
+                    patientId,
+                    location: locInput,
+                    level: scoreInput,
+                    score: scoreInput,  // alias pour compatibilité
+                    authorName: reporterName,
+                    authorRole: 'Équipe Soignante',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
 
                 try {
-                    await db.collection('medical_pain').add({
-                        patientId,
-                        location: locInput,
-                        level: scoreInput,
-                        authorName: reporterName,
-                        authorRole: roleName,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    // Valeur courante (ID fixe par zone)
+                    await db.collection('medical_pain').doc(docId).set(payload);
+                    // Historique (auto-ID)
+                    await db.collection('medical_pain_history').add(payload);
 
-                    // Cacher et reset
                     document.getElementById('pain-location-input').value = '';
                     document.getElementById('pain-score-input').value = '';
                     addPainModal.classList.add('hidden');
                     
-                    // Auto append a clinical note (Optionnel, on peut le faire pour tracker)
                     if(typeof appendClinicalNote === 'function') {
                         appendClinicalNote(`Évaluation ajoutée : Douleur à l'emplacement "${locInput}" estimée à ${scoreInput}/10.`);
                     }
                 } catch(e) {
-                    console.error("Erreur évaluation douleur:", e);
+                    console.error('Erreur évaluation douleur:', e);
                 }
             }
         });
@@ -1207,12 +1252,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
             // Douleur : pas de orderBy → tri en JS
-            db.collection('medical_pain')
+            db.collection('medical_pain_history')
                 .where('patientId', '==', patientId)
                 .get().then(snap => {
 
                 if (snap.empty) {
-                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique de douleur.</div>';
+                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique de douleur.<br><small>Les mises à jour de zones seront enregistrées automatiquement.</small></div>';
                     return;
                 }
 
@@ -1240,8 +1285,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </thead><tbody>`;
 
                 rows.forEach(d => {
-                    const score = parseInt(d.score) || 0;
+                    const score = parseInt(d.level ?? d.score) || 0;
                     const barColor = score >= 7 ? '#CE1126' : score >= 4 ? '#F59E0B' : '#10B981';
+
                     html += `<tr style="border-bottom:1px solid #f0e8e9;">
                         <td style="padding:7px 4px;color:#564245;">${fmtDate(d.createdAt)}</td>
                         <td style="padding:7px 4px;font-weight:600;">${d.location || d.zone || '—'}</td>
