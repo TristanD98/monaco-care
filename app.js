@@ -248,39 +248,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if(vitalsGrid) {
             vitalsGrid.innerHTML = '<div style="text-align:center;color:gray;grid-column:1/-1;">Chargement...</div>';
 
-            // Les 3 documents ont des IDs fixes (patientId_Rythme_Cardiaque, etc.)
-            // On lit juste tous les docs de ce patient → max 3 résultats
+            const VITAL_TYPES = [
+                { type: 'Rythme Cardiaque',   unit: 'bpm',  placeholder: '72' },
+                { type: 'Tension Artérielle', unit: 'mmHg', placeholder: '120/80' },
+                { type: 'Température',        unit: '°C',   placeholder: '37.2' },
+            ];
+
             const unsubVitals = db.collection('medical_vitals')
                 .where('patientId', '==', patientId)
                 .onSnapshot(snap => {
-                    if(snap.empty) {
-                        vitalsGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
-                            <i class="fa-regular fa-chart-bar" style="font-size:24px; margin-bottom:8px; display:block;"></i>
-                            Aucune constante enregistrée.
-                        </div>`;
-                    } else {
-                        // Un seul doc par type grâce aux IDs fixes → afficher directement
-                        vitalsGrid.innerHTML = '';
-                        const ORDER = ['Rythme Cardiaque', 'Tension Artérielle', 'Température'];
-                        const byType = {};
-                        snap.forEach(doc => { byType[doc.data().type] = doc.data(); });
+                    vitalsGrid.innerHTML = '';
+                    const byType = {};
+                    snap.forEach(doc => { byType[doc.data().type] = doc.data(); });
 
-                        ORDER.forEach(typeName => {
-                            const d = byType[typeName];
-                            if (!d) return;
-                            const div = document.createElement('div');
-                            div.className = 'vital-card';
-                            div.innerHTML = `
-                                <h4>${d.type}</h4>
-                                <div class="value">${d.value} <span class="unit">${d.unit || ''}</span></div>
-                                <div class="status ${d.status || 'normal'}">${d.status === 'alert' ? 'À surveiller' : 'Normal'}</div>
-                            `;
-                            vitalsGrid.appendChild(div);
-                        });
-                    }
+                    // Toujours afficher les 3 cartes, cliquables, vides ou non
+                    VITAL_TYPES.forEach(meta => {
+                        const d = byType[meta.type] || null;
+                        const div = document.createElement('div');
+                        div.className = 'vital-card';
+                        div.style.cursor = 'pointer';
+                        div.title = 'Cliquer pour mettre à jour';
+                        div.innerHTML = `
+                            <h4>${meta.type}</h4>
+                            <div class="value" style="${!d ? 'opacity:0.35;' : ''}">${d ? d.value : '--'} <span class="unit">${meta.unit}</span></div>
+                            <div class="status ${d ? (d.status || 'normal') : 'normal'}" style="${!d ? 'opacity:0.35;' : ''}">
+                                ${!d ? 'Appuyer pour saisir' : (d.status === 'alert' ? 'À surveiller' : 'Normal')}
+                            </div>
+                        `;
+                        div.addEventListener('click', () => promptVital(meta.type, meta.unit, meta.placeholder));
+                        vitalsGrid.appendChild(div);
+                    });
                 });
             vaultListeners.push(unsubVitals);
         }
+
 
 
         // 2. Douleur
@@ -1006,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- VITALS: trois boutons séparés, valeurs remplacées à chaque fois --- */
+    /* --- VITALS: cartes cliquables (pas de boutons séparés) --- */
 
     function promptVital(type, unit, placeholder) {
         const role = roleSelect.value;
@@ -1014,14 +1015,11 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Erreur de droits : impossible d'ajouter des constantes.");
             return;
         }
-
         const value = prompt(`Saisir ${type} (${unit})\nExemple : ${placeholder}`);
         if (!value || !value.trim()) return;
 
         const session = MonacoCare.getSession();
         const patientId = session?.patientId || 'patient-demo';
-
-        // ID fixe par patient + type → le set() écrase toujours le même document
         const docId = `${patientId}_${type.replace(/\s+/g, '_')}`;
 
         let status = 'normal';
@@ -1031,11 +1029,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         db.collection('medical_vitals').doc(docId).set({
-            patientId,
-            type,
+            patientId, type,
             value: value.trim().replace(',', '.'),
-            unit,
-            status,
+            unit, status,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
             if (typeof appendClinicalNote === 'function') {
@@ -1044,40 +1040,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(e => console.error('Erreur constante:', e));
     }
 
-    // Remplacer le bouton unique par trois boutons distincts
+    // Cacher l'ancien bouton (les cartes sont maintenant cliquables)
     const addVitalsBtn = document.getElementById('add-vitals-btn');
-    if (addVitalsBtn) {
-        // Transformer le bouton unique en trois boutons côte à côte
-        const parent = addVitalsBtn.parentNode;
-        addVitalsBtn.style.display = 'none'; // Cacher l'ancien bouton
-
-        // Créer le conteneur des 3 boutons si pas déjà fait
-        if (!document.getElementById('vitals-btns-row')) {
-            const row = document.createElement('div');
-            row.id = 'vitals-btns-row';
-            row.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;';
-
-            const vitals = [
-                { label: '❤️ Pouls',       type: 'Rythme Cardiaque', unit: 'bpm',   placeholder: '72' },
-                { label: '🩺 Tension',      type: 'Tension Artérielle', unit: 'mmHg', placeholder: '120/80' },
-                { label: '🌡️ Température',  type: 'Température',      unit: '°C',    placeholder: '37.2' },
-            ];
-
-            vitals.forEach(v => {
-                const btn = document.createElement('button');
-                btn.textContent = v.label;
-                btn.style.cssText = `
-                    flex:1; min-width:90px; padding:10px 8px; border:none; border-radius:10px;
-                    background:var(--monaco-red); color:#fff; font-size:12px; font-weight:600;
-                    cursor:pointer; font-family:Inter,sans-serif;
-                `;
-                btn.addEventListener('click', () => promptVital(v.type, v.unit, v.placeholder));
-                row.appendChild(btn);
-            });
-
-            parent.insertBefore(row, addVitalsBtn.nextSibling);
-        }
-    }
+    if (addVitalsBtn) addVitalsBtn.style.display = 'none';
 
 
     const openPainModalBtn = document.getElementById('open-pain-modal-btn');
