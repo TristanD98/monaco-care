@@ -6,7 +6,7 @@
     <title>Monaco Care - Démo Complète</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -384,7 +384,7 @@
             </div>
         </div>
     </div>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
     <script>
     // Vérification de session au chargement
     (function() {
@@ -423,6 +423,14 @@
             const settingsBtn = document.getElementById('settings-btn');
             if (settingsBtn && session.role !== 'family' && session.role !== 'particulier') {
                 settingsBtn.style.display = 'none';
+            }
+
+            // Garantir que patientId est toujours présent dans la session
+            // (le login PRO ne le stocke pas toujours, ce qui brise le flux)
+            if (!session.patientId) {
+                const updatedSession = { ...session, patientId: 'patient-demo', label: 'Charles Leclerc' };
+                try { localStorage.setItem('mc_session', JSON.stringify(updatedSession)); } catch(e) {}
+                try { sessionStorage.setItem('mc_session', JSON.stringify(updatedSession)); } catch(e) {}
             }
 
             // Synchroniser le role-select avec le rôle de session

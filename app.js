@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const vaultContent = document.getElementById('vault-content');
     const simulateBioBtn = document.getElementById('simulate-bio-btn');
     let vaultUnlocked = false;
+    let fluxListener = null;
+    let currentChatListener = null;
 
     // Chat Elements
     const chatRoomView = document.getElementById('chat-room-view');
@@ -312,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * les vrais membres de l'équipe du patient depuis Firestore (Sprint 3).
      */
     /* --- CHAT : REALTIME CONTACTS & MESSAGES --- */
-    let currentChatListener = null;
     let currentContactId = null;
 
     async function loadPatientTeam(patientId) {
@@ -592,7 +593,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* --- FIREBASE: LECTURE DU FLUX EN TEMPS RÉEL --- */
-    let fluxListener = null;
 
     function formatTime(dateObj) {
         if(!dateObj) return "À l'instant";
@@ -1392,9 +1392,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mode Démo: Mock de patients
             let patients = [];
             if(role === 'family') {
-                patients = [{id: 'patient-demo', name: 'Robert Dubois'}, {id: 'PAT-002', name: 'Jeanne Dubois'}];
+                patients = [{id: 'patient-demo', name: 'Charles Leclerc'}];
             } else {
-                patients = [{id: 'patient-demo', name: 'Robert Dubois'}, {id: 'PAT-003', name: 'Alice Martin'}];
+                patients = [{id: 'patient-demo', name: 'Charles Leclerc'}];
             }
 
             listContainer.innerHTML = '';
