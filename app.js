@@ -47,16 +47,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* --- ROLE SIMULATION LOGIC --- */
-    
-    // Initialize default shortcuts if totally blank
-    if(!window.customShortcuts) {
-        window.customShortcuts = {
-            'kine': ['🏃 Séance Terminée', '✅ Mobilité Stable', '⚠️ Alerte Douleur'],
-            'auxiliaire': ['🍽️ Repas Pris', '🚿 Toilette Faite', '😊 Bonne Humeur'],
-            'medecin': ['💊 Nouvelle Prescription', '🩺 Visite Effectuée'],
-            'family': ['❤️ Visite de courtoisie']
-        };
+
+    // Raccourcis par défaut
+    const DEFAULT_SHORTCUTS = {
+        'kine':       ['🏃 Séance Terminée', '✅ Mobilité Stable', '⚠️ Alerte Douleur'],
+        'auxiliaire': ['🍽️ Repas Pris', '🚿 Toilette Faite', '😊 Bonne Humeur'],
+        'medecin':    ['💊 Nouvelle Prescription', '🩺 Visite Effectuée'],
+        'family':     ['❤️ Visite de courtoisie']
+    };
+
+    // Charger depuis localStorage immédiatement (pour affichage instantané)
+    const savedShortcutsRaw = localStorage.getItem('mc_custom_shortcuts');
+    if (savedShortcutsRaw) {
+        try { window.customShortcuts = JSON.parse(savedShortcutsRaw); } catch(e) { window.customShortcuts = null; }
     }
+    if (!window.customShortcuts) {
+        window.customShortcuts = JSON.parse(JSON.stringify(DEFAULT_SHORTCUTS));
+        localStorage.setItem('mc_custom_shortcuts', JSON.stringify(window.customShortcuts));
+    }
+
+    // Identifiant de l'utilisateur pour Firebase (proId de la session)
+    function getShortcutsDocId() {
+        const session = MonacoCare.getSession();
+        return session?.proId || session?.uid || 'demo-user';
+    }
+
+    // Sauvegarder les raccourcis dans Firebase ET localStorage
+    async function saveShortcuts() {
+        const docId = getShortcutsDocId();
+        localStorage.setItem('mc_custom_shortcuts', JSON.stringify(window.customShortcuts));
+        try {
+            await db.collection('user_shortcuts').doc(docId).set(window.customShortcuts);
+        } catch(e) {
+            console.warn('Impossible de sauvegarder les raccourcis dans Firebase:', e);
+        }
+    }
+
+    // Charger les raccourcis depuis Firebase (async, met à jour l'UI si différent)
+    async function loadShortcutsFromFirebase() {
+        const docId = getShortcutsDocId();
+        try {
+            const doc = await db.collection('user_shortcuts').doc(docId).get();
+            if (doc.exists) {
+                const data = doc.data();
+                // Fusionner avec les rôles par défaut manquants
+                window.customShortcuts = Object.assign({}, DEFAULT_SHORTCUTS, data);
+                localStorage.setItem('mc_custom_shortcuts', JSON.stringify(window.customShortcuts));
+                updateRoleUI(); // Rafraîchir les boutons avec les raccourcis Firebase
+            }
+        } catch(e) {
+            console.warn('Impossible de charger les raccourcis depuis Firebase:', e);
+        }
+    }
+
+    // Lancer le chargement Firebase en arrière-plan
+    loadShortcutsFromFirebase();
 
     const updateRoleUI = () => {
         const role = roleSelect.value;
@@ -917,6 +962,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', (e) => {
                     const idx = e.currentTarget.getAttribute('data-index');
                     window.customShortcuts[role].splice(idx, 1);
+                    // Sauvegarder dans Firebase ET localStorage
+                    saveShortcuts();
                     renderManageList(); 
                     updateRoleUI();     
                 });
@@ -937,6 +984,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(!window.customShortcuts[role]) window.customShortcuts[role] = [];
                 window.customShortcuts[role].push(fullTxt);
                 
+                // Sauvegarder dans Firebase ET localStorage
+                saveShortcuts();
+
                 // Clear inputs
                 emjInput.value = '';
                 nameInput.value = '';
