@@ -247,10 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const vitalsGrid = document.getElementById('vitals-grid-container');
         if(vitalsGrid) {
             vitalsGrid.innerHTML = '<div style="text-align:center;color:gray;grid-column:1/-1;">Chargement...</div>';
+
+            // Les 3 documents ont des IDs fixes (patientId_Rythme_Cardiaque, etc.)
+            // On lit juste tous les docs de ce patient → max 3 résultats
             const unsubVitals = db.collection('medical_vitals')
                 .where('patientId', '==', patientId)
-                .orderBy('createdAt', 'desc')
-                .limit(10)
                 .onSnapshot(snap => {
                     if(snap.empty) {
                         vitalsGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
@@ -258,9 +259,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             Aucune constante enregistrée.
                         </div>`;
                     } else {
+                        // Un seul doc par type grâce aux IDs fixes → afficher directement
                         vitalsGrid.innerHTML = '';
-                        snap.forEach(doc => {
-                            const d = doc.data();
+                        const ORDER = ['Rythme Cardiaque', 'Tension Artérielle', 'Température'];
+                        const byType = {};
+                        snap.forEach(doc => { byType[doc.data().type] = doc.data(); });
+
+                        ORDER.forEach(typeName => {
+                            const d = byType[typeName];
+                            if (!d) return;
                             const div = document.createElement('div');
                             div.className = 'vital-card';
                             div.innerHTML = `
@@ -274,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             vaultListeners.push(unsubVitals);
         }
+
 
         // 2. Douleur
         const painGrid = document.getElementById('pain-trackers-container');
@@ -998,58 +1006,79 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- NEW PAIN & VITALS LOGIC (FIREBASE) --- */
+    /* --- VITALS: trois boutons séparés, valeurs remplacées à chaque fois --- */
 
-    const addVitalsBtn = document.getElementById('add-vitals-btn');
-    if(addVitalsBtn) {
-        addVitalsBtn.addEventListener('click', async () => {
-            if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
-                alert("Erreur de droits : Impossible d'ajouter des constantes.");
-                return;
+    function promptVital(type, unit, placeholder) {
+        const role = roleSelect.value;
+        if (role === 'auxiliaire' || role === 'pro') {
+            alert("Erreur de droits : impossible d'ajouter des constantes.");
+            return;
+        }
+
+        const value = prompt(`Saisir ${type} (${unit})\nExemple : ${placeholder}`);
+        if (!value || !value.trim()) return;
+
+        const session = MonacoCare.getSession();
+        const patientId = session?.patientId || 'patient-demo';
+
+        // ID fixe par patient + type → le set() écrase toujours le même document
+        const docId = `${patientId}_${type.replace(/\s+/g, '_')}`;
+
+        let status = 'normal';
+        if (type === 'Température') {
+            const num = parseFloat(value.replace(',', '.'));
+            if (num >= 38.0 || num <= 36.0) status = 'alert';
+        }
+
+        db.collection('medical_vitals').doc(docId).set({
+            patientId,
+            type,
+            value: value.trim().replace(',', '.'),
+            unit,
+            status,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            if (typeof appendClinicalNote === 'function') {
+                appendClinicalNote(`Constante mise à jour : ${type} → ${value.trim()} ${unit}`);
             }
-            const heartRate = prompt("Saisir le rythme cardiaque (bpm) :");
-            if(!heartRate) return;
-            const bloodPress = prompt("Saisir la Tension Artérielle (ex: 120/80) :");
-            if(!bloodPress) return;
-            const temperature = prompt("Saisir la Température (°C, ex: 37.2) :");
-            if(!temperature) return;
-
-            const session = MonacoCare.getSession();
-            const patientId = session?.patientId || 'patient-demo';
-            const reporterName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
-
-            try {
-                const batch = db.batch();
-                
-                // Tension
-                batch.set(db.collection('medical_vitals').doc(), {
-                    patientId, type: 'Tension Artérielle', value: bloodPress, unit: 'mmHg',
-                    status: 'normal', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                // Pouls
-                batch.set(db.collection('medical_vitals').doc(), {
-                    patientId, type: 'Rythme Cardiaque', value: heartRate, unit: 'bpm',
-                    status: 'normal', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                // Température
-                const tempNum = parseFloat(temperature.replace(',', '.'));
-                const tStatus = tempNum >= 38.0 ? 'alert' : (tempNum <= 36.0 ? 'alert' : 'normal');
-                batch.set(db.collection('medical_vitals').doc(), {
-                    patientId, type: 'Température', value: temperature.replace(',', '.'), unit: '°C',
-                    status: tStatus, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                await batch.commit();
-
-                // Ajouter automatiquement une note clinique de tracé
-                if (typeof appendClinicalNote === 'function') {
-                    appendClinicalNote(`Relevé de constantes : TA ${bloodPress} | Pouls ${heartRate} | Temp. ${temperature.replace(',','.')}°C.`);
-                }
-            } catch(e) {
-                console.error("Erreur enregistrement constantes", e);
-            }
-        });
+        }).catch(e => console.error('Erreur constante:', e));
     }
+
+    // Remplacer le bouton unique par trois boutons distincts
+    const addVitalsBtn = document.getElementById('add-vitals-btn');
+    if (addVitalsBtn) {
+        // Transformer le bouton unique en trois boutons côte à côte
+        const parent = addVitalsBtn.parentNode;
+        addVitalsBtn.style.display = 'none'; // Cacher l'ancien bouton
+
+        // Créer le conteneur des 3 boutons si pas déjà fait
+        if (!document.getElementById('vitals-btns-row')) {
+            const row = document.createElement('div');
+            row.id = 'vitals-btns-row';
+            row.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;';
+
+            const vitals = [
+                { label: '❤️ Pouls',       type: 'Rythme Cardiaque', unit: 'bpm',   placeholder: '72' },
+                { label: '🩺 Tension',      type: 'Tension Artérielle', unit: 'mmHg', placeholder: '120/80' },
+                { label: '🌡️ Température',  type: 'Température',      unit: '°C',    placeholder: '37.2' },
+            ];
+
+            vitals.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.style.cssText = `
+                    flex:1; min-width:90px; padding:10px 8px; border:none; border-radius:10px;
+                    background:var(--monaco-red); color:#fff; font-size:12px; font-weight:600;
+                    cursor:pointer; font-family:Inter,sans-serif;
+                `;
+                btn.addEventListener('click', () => promptVital(v.type, v.unit, v.placeholder));
+                row.appendChild(btn);
+            });
+
+            parent.insertBefore(row, addVitalsBtn.nextSibling);
+        }
+    }
+
 
     const openPainModalBtn = document.getElementById('open-pain-modal-btn');
     const addPainModal = document.getElementById('add-pain-modal');
