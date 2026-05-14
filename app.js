@@ -1037,16 +1037,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (num >= 38.0 || num <= 36.0) status = 'alert';
         }
 
-        db.collection('medical_vitals').doc(docId).set({
+        const payload = {
             patientId, type,
             value: value.trim().replace(',', '.'),
             unit, status,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            if (typeof appendClinicalNote === 'function') {
-                appendClinicalNote(`Constante mise à jour : ${type} → ${value.trim()} ${unit}`);
-            }
-        }).catch(e => console.error('Erreur constante:', e));
+        };
+
+        // Valeur courante (ID fixe = toujours 1 doc par type)
+        db.collection('medical_vitals').doc(docId).set(payload)
+            .then(() => {
+                if (typeof appendClinicalNote === 'function') {
+                    appendClinicalNote(`Constante mise à jour : ${type} → ${value.trim()} ${unit}`);
+                }
+            }).catch(e => console.error('Erreur constante:', e));
+
+        // Historique (ID auto-généré = accumulation voulue)
+        db.collection('medical_vitals_history').add(payload)
+            .catch(e => console.error('Erreur historique constante:', e));
     }
 
     // Cacher l'ancien bouton (les cartes sont maintenant cliquables)
@@ -1113,192 +1121,181 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- HISTORY MODAL LOGIC (Chart.js - Multi-Graphs) --- */
+    /* --- HISTORY TABLE (Firebase réel) --- */
+    function renderHistoryTable(metric, period) {
+        const container = document.getElementById('charts-container');
+        container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Chargement...</div>';
+
+        const session = MonacoCare.getSession();
+        const patientId = session?.patientId || 'patient-demo';
+
+        // Calcul de la date de début selon la période
+        let since = null;
+        if (period === '24h') {
+            since = new Date(Date.now() - 24 * 3600 * 1000);
+        } else if (period === '7j') {
+            since = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+        }
+        // 'Tout' → since = null → pas de filtre de date
+
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' })
+                + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        }
+
+        if (metric === 'Constantes Vitales') {
+            let q = db.collection('medical_vitals_history')
+                .where('patientId', '==', patientId)
+                .orderBy('createdAt', 'desc')
+                .limit(50);
+            if (since) q = q.startAfter(firebase.firestore.Timestamp.fromDate(since));
+
+            q.get().then(snap => {
+                if (snap.empty) {
+                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique disponible.<br><small>Les nouvelles saisies seront enregistrées automatiquement.</small></div>';
+                    return;
+                }
+
+                // Filtrer par date si nécessaire
+                let rows = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const ts = d.createdAt?.toDate?.() || null;
+                    if (since && ts && ts < since) return;
+                    rows.push(d);
+                });
+
+                if (rows.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucune donnée sur cette période.</div>';
+                    return;
+                }
+
+                const COLORS = {
+                    'Rythme Cardiaque':   '#CE1126',
+                    'Tension Artérielle': '#3B82F6',
+                    'Température':        '#F97316'
+                };
+
+                let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #dcc0c3;">
+                            <th style="text-align:left;padding:6px 4px;color:#7B1535;font-weight:700;">Date</th>
+                            <th style="text-align:left;padding:6px 4px;color:#7B1535;font-weight:700;">Type</th>
+                            <th style="text-align:right;padding:6px 4px;color:#7B1535;font-weight:700;">Valeur</th>
+                        </tr>
+                    </thead><tbody>`;
+
+                rows.forEach(d => {
+                    const color = COLORS[d.type] || '#564245';
+                    html += `<tr style="border-bottom:1px solid #f0e8e9;">
+                        <td style="padding:7px 4px;color:#564245;">${fmtDate(d.createdAt)}</td>
+                        <td style="padding:7px 4px;">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:5px;"></span>
+                            ${d.type}
+                        </td>
+                        <td style="padding:7px 4px;text-align:right;font-weight:700;color:#1c1b1c;">${d.value} <span style="font-weight:400;color:#897174;">${d.unit}</span></td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            }).catch(e => {
+                console.error('Historique vitaux:', e);
+                container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Erreur de chargement.<br><small>Un index Firebase est peut-être nécessaire. Vérifiez la console.</small></div>';
+            });
+
+        } else {
+            // Douleur : collection medical_pain
+            let q = db.collection('medical_pain')
+                .where('patientId', '==', patientId)
+                .orderBy('createdAt', 'desc')
+                .limit(50);
+
+            q.get().then(snap => {
+                if (snap.empty) {
+                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucun historique de douleur.</div>';
+                    return;
+                }
+
+                let rows = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const ts = d.createdAt?.toDate?.() || null;
+                    if (since && ts && ts < since) return;
+                    rows.push(d);
+                });
+
+                if (rows.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Aucune donnée sur cette période.</div>';
+                    return;
+                }
+
+                let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #dcc0c3;">
+                            <th style="text-align:left;padding:6px 4px;color:#7B1535;font-weight:700;">Date</th>
+                            <th style="text-align:left;padding:6px 4px;color:#7B1535;font-weight:700;">Zone</th>
+                            <th style="text-align:right;padding:6px 4px;color:#7B1535;font-weight:700;">Intensité</th>
+                        </tr>
+                    </thead><tbody>`;
+
+                rows.forEach(d => {
+                    const score = parseInt(d.score) || 0;
+                    const barColor = score >= 7 ? '#CE1126' : score >= 4 ? '#F59E0B' : '#10B981';
+                    html += `<tr style="border-bottom:1px solid #f0e8e9;">
+                        <td style="padding:7px 4px;color:#564245;">${fmtDate(d.createdAt)}</td>
+                        <td style="padding:7px 4px;font-weight:600;">${d.location || d.zone || '—'}</td>
+                        <td style="padding:7px 4px;text-align:right;">
+                            <span style="display:inline-block;background:${barColor};color:white;font-weight:700;font-size:11px;padding:2px 8px;border-radius:999px;">${score}/10</span>
+                        </td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+            }).catch(e => {
+                console.error('Historique douleur:', e);
+                container.innerHTML = '<div style="text-align:center;color:gray;padding:20px;">Erreur de chargement.</div>';
+            });
+        }
+    }
+
+    /* --- HISTORY MODAL WIRING --- */
     const historyBtns = document.querySelectorAll('.history-btn');
     const historyModal = document.getElementById('history-modal');
     const closeHistoryBtn = document.getElementById('close-history-modal');
     const historyTitle = document.getElementById('history-modal-title');
     const histTabs = document.querySelectorAll('.hist-tab');
-    let currentCharts = [];
-    let currentMetric = "Échelle de Douleur";
-
-    function renderCharts(metric, period) {
-        const container = document.getElementById('charts-container');
-        container.innerHTML = ''; 
-        
-        currentCharts.forEach(c => c.destroy());
-        currentCharts = [];
-        
-        let labels = [];
-        if(period === "24h") labels = ['10h', '14h', '18h', '22h', 'Mnt.'];
-        if(period === "48h") labels = ['J-1 Matin', 'J-1 Soir', 'Matin', 'Midi', 'Mnt.'];
-        if(period === "72h") labels = ['J-2', 'J-1', 'Hier', 'Matin', 'Mnt.'];
-        
-        if(metric === "Constantes Vitales" || metric === "Constantes Vitals") { // Fallbacks
-            // 1. Heart Rate Canvas
-            const hrWrapper = document.createElement('div');
-            hrWrapper.style.cssText = "height: 150px; position: relative; width:100%; margin-bottom:15px;";
-            hrWrapper.innerHTML = `<canvas id="hrChart"></canvas>`;
-            container.appendChild(hrWrapper);
-            
-            // 2. Blood Pressure Canvas
-            const bpWrapper = document.createElement('div');
-            bpWrapper.style.cssText = "height: 150px; position: relative; width:100%;";
-            bpWrapper.innerHTML = `<canvas id="bpChart"></canvas>`;
-            container.appendChild(bpWrapper);
-            
-            // Mock data for HR
-            let hrData = [72, 88, 75, 110, 82];
-            if(period === "48h") hrData = [70, 75, 80, 105, 82];
-            if(period === "72h") hrData = [68, 72, 75, 85, 82];
-            
-            const hrChart = new Chart(document.getElementById('hrChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Fréquence Cardiaque (bpm)',
-                        data: hrData,
-                        borderColor: '#CE1126',
-                        backgroundColor: 'rgba(206,17,38,0.1)',
-                        borderWidth: 2, tension: 0.3, fill: true, pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { ticks:{font:{size:9}} }, y: { min: 50, max: 130, ticks:{font:{size:9}} } },
-                    plugins: { legend: { display: true, position: 'top', labels:{boxWidth:10, font:{size:10}} }, tooltip: { enabled: true } }
-                }
-            });
-            
-            // Mock data for BP
-            let sysData = [110, 125, 115, 140, 120];
-            let diaData = [70, 85, 75, 95, 80];
-            if(period === "48h") { sysData = [115, 120, 130, 135, 120]; diaData = [75, 80, 85, 90, 80]; }
-            if(period === "72h") { sysData = [118, 122, 125, 120, 120]; diaData = [78, 82, 80, 78, 80]; }
-            
-            const bpChart = new Chart(document.getElementById('bpChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Systolique',
-                            data: sysData,
-                            borderColor: '#3B82F6',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2, tension: 0.3, pointRadius: 3
-                        },
-                        {
-                            label: 'Diastolique',
-                            data: diaData,
-                            borderColor: '#10B981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            borderWidth: 2, tension: 0.3, fill: '-1', pointRadius: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { ticks:{font:{size:9}} }, y: { min: 50, max: 160, ticks:{font:{size:9}} } },
-                    plugins: { legend: { display: true, position: 'top', labels:{boxWidth:10, font:{size:10}} }, tooltip: { mode: 'index', intersect: false } }
-                }
-            });
-            
-            currentCharts.push(hrChart, bpChart);
-            
-        } else {
-            // Douleur : Dynamic based on DOM
-            const painWrapper = document.createElement('div');
-            painWrapper.style.cssText = "height: 240px; position: relative; width:100%;";
-            painWrapper.innerHTML = `<canvas id="painChart"></canvas>`;
-            container.appendChild(painWrapper);
-            
-            const painCards = document.querySelectorAll('.pain-card');
-            const datasets = [];
-            const colors = ['#CE1126', '#F59E0B', '#3B82F6', '#10B981', '#8B5CF6'];
-            
-            painCards.forEach((card, i) => {
-                const title = card.querySelector('.pain-header span:first-child').innerText;
-                const scoreText = card.querySelector('.pain-score').innerText;
-                const currentScore = parseInt(scoreText.split('/')[0]) || 5;
-                
-                const dataPoints = [];
-                let val = currentScore;
-                for(let j=0; j<4; j++) {
-                    let r = val + (Math.floor(Math.random()*5)-2);
-                    if(r < 0) r = 0;
-                    if(r > 10) r = 10;
-                    dataPoints.unshift(r); 
-                    val = r;
-                }
-                dataPoints.push(currentScore);
-                
-                datasets.push({
-                    label: title,
-                    data: dataPoints,
-                    borderColor: colors[i % colors.length],
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    pointRadius: 4
-                });
-            });
-            
-            const painChart = new Chart(document.getElementById('painChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { ticks:{font:{size:9}} }, y: { min: 0, max: 10, ticks:{font:{size:9}} } },
-                    plugins: { legend: { display: true, position: 'bottom', labels:{boxWidth:10, font:{size:10}} }, tooltip: { mode: 'index', intersect: false } }
-                }
-            });
-            
-            currentCharts.push(painChart);
-        }
-    }
+    let currentMetric = 'Constantes Vitales';
 
     historyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             if(roleSelect.value === 'auxiliaire' || roleSelect.value === 'pro') {
-                alert("Accès refusé. Historique réservé au corps médical et à la famille.");
+                alert('Accès refusé. Historique réservé au corps médical et à la famille.');
             } else {
                 currentMetric = btn.getAttribute('data-metric');
-                // Nettoyer text metrics if necessary
-                if(currentMetric === "Constantes Vitales" || currentMetric === "Échelle de Douleur") {
-                    // C'est bon
-                }
-                if(historyTitle) historyTitle.innerText = "Historique: " + currentMetric;
-                
+                if (historyTitle) historyTitle.innerText = 'Historique : ' + currentMetric;
                 histTabs.forEach(t => t.classList.remove('active'));
                 histTabs[0].classList.add('active');
-                
                 historyModal.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    renderCharts(currentMetric, "24h");
-                }, 50);
+                renderHistoryTable(currentMetric, '24h');
             }
         });
     });
 
-    if(closeHistoryBtn) {
-        closeHistoryBtn.addEventListener('click', () => {
-            historyModal.classList.add('hidden');
-            currentCharts.forEach(c => c.destroy());
-            currentCharts = [];
-        });
+    if (closeHistoryBtn) {
+        closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
     }
 
     histTabs.forEach(tab => {
         tab.addEventListener('click', () => {
             histTabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-            renderCharts(currentMetric, tab.innerText);
+            renderHistoryTable(currentMetric, tab.innerText.trim());
         });
     });
 
