@@ -258,8 +258,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 .where('patientId', '==', patientId)
                 .onSnapshot(snap => {
                     vitalsGrid.innerHTML = '';
+
+                    // Garder uniquement le document LE PLUS RÉCENT par type
+                    // (gère les anciens docs accumulés avec des IDs aléatoires)
                     const byType = {};
-                    snap.forEach(doc => { byType[doc.data().type] = doc.data(); });
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const existing = byType[data.type];
+                        const newTs = data.createdAt?.seconds ?? 0;
+                        const oldTs = existing?.createdAt?.seconds ?? 0;
+                        if (!existing || newTs >= oldTs) {
+                            byType[data.type] = data;
+                        }
+                    });
 
                     // Toujours afficher les 3 cartes, cliquables, vides ou non
                     VITAL_TYPES.forEach(meta => {
@@ -271,15 +282,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         div.innerHTML = `
                             <h4>${meta.type}</h4>
                             <div class="value" style="${!d ? 'opacity:0.35;' : ''}">${d ? d.value : '--'} <span class="unit">${meta.unit}</span></div>
-                            <div class="status ${d ? (d.status || 'normal') : 'normal'}" style="${!d ? 'opacity:0.35;' : ''}">
-                                ${!d ? 'Appuyer pour saisir' : (d.status === 'alert' ? 'À surveiller' : 'Normal')}
-                            </div>
                         `;
                         div.addEventListener('click', () => promptVital(meta.type, meta.unit, meta.placeholder));
                         vitalsGrid.appendChild(div);
                     });
                 });
             vaultListeners.push(unsubVitals);
+
         }
 
 
