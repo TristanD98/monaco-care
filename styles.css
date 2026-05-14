@@ -528,7 +528,18 @@ body > .phone {
 }
 
 /* ── Vault / Coffre Médical ───────────────────────────────── */
+
+/* Le contenu du coffre déverrouillé scrolle indépendamment */
+#vault-view {
+    overflow-y: auto;
+}
+#vault-content {
+    overflow-y: auto;
+    flex: 1;
+}
+
 .vault-section { padding: 12px; }
+
 .vault-item {
     background: var(--surface-bright);
     border-radius: var(--radius-lg);
