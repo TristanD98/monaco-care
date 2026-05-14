@@ -602,36 +602,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadRealtimeFeed(patientId) {
         const fluxFeed = document.getElementById('flux-feed');
-        if(fluxListener) fluxListener(); // Stop previous listener
+        if(fluxListener) fluxListener();
 
         fluxListener = db.collection('posts')
             .where('patientId', '==', patientId)
             .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
-                // Retirer le message "vide"
-                const emptyMsg = fluxFeed.querySelector('.empty-msg, [style*="text-align:center"]');
-                if (emptyMsg) emptyMsg.remove();
+                // Ignorer les écritures locales en attente (bug serverTimestamp)
+                if (snapshot.metadata.hasPendingWrites) return;
 
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        renderRealtimePost(change.doc, fluxFeed, true);
-                    }
-                    if (change.type === 'modified') {
-                        // Le doc a été mis à jour (ex: visibilité changée)
-                        const oldPost = document.getElementById('post-' + change.doc.id);
-                        if (oldPost) {
-                            oldPost.remove();
-                            // Pour simplifier on le recrée (dans une vraie app, on mettrait juste à jour les classes)
-                            renderRealtimePost(change.doc, fluxFeed, false);
-                        }
-                    }
-                    if (change.type === 'removed') {
-                        const oldPost = document.getElementById('post-' + change.doc.id);
-                        if(oldPost) oldPost.remove();
-                    }
-                });
-                
-                if(fluxFeed.children.length === 0) {
+                // Reconstruire tout le flux à chaque mise à jour
+                // La requête orderBy('createdAt','desc') donne les docs du plus récent au plus ancien.
+                // On les ajoute avec appendChild → le plus récent finit en 1ère position (haut).
+                fluxFeed.innerHTML = '';
+
+                if (snapshot.empty) {
                     fluxFeed.innerHTML = `
                         <div style="text-align:center; padding:40px 20px; color:var(--text-muted);">
                             <i class="fa-regular fa-newspaper" style="font-size:32px; margin-bottom:12px; display:block; opacity:0.4;"></i>
@@ -639,9 +624,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p style="font-size:11px; margin-top:4px; opacity:0.7;">Les publications de l'équipe soignante apparaîtront ici.</p>
                         </div>
                     `;
+                    return;
                 }
+
+                snapshot.docs.forEach(doc => {
+                    renderRealtimePost(doc, fluxFeed, false);
+                });
             });
     }
+
 
     function renderRealtimePost(docSnap, container, isNewAdd) {
         const data = docSnap.data();
@@ -663,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'urgent':   { cls: 'tag-urgent',  label: '⚠️ URGENT' }
         };
         const visKey = data.isUrgent ? 'urgent' : (data.visibility || 'medifam');
-        const tagInfo = tagMap[visKey];
+        const tagInfo = tagMap[visKey] || tagMap['medifam']; // Fallback sécurisé
 
         const timeStr = formatTime(data.createdAt);
         const imageHTML = data.imageUrl ? `<img class="post-image" src="${data.imageUrl}" alt="Photo">` : '';
