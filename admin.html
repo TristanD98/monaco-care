@@ -302,12 +302,7 @@
             <div class="content">
                 <div class="stats-grid" id="stats-grid"><!-- JS --></div>
 
-                <div class="alert-box info" style="background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.25);">
-                    <i class="fa-solid fa-circle-check" style="color:#10B981;"></i>
-                    <div>
-                        <strong style="color:#10B981;">Firebase connecté.</strong> Les données sont synchronisées en temps réel sur tous les appareils via Firebase Firestore.
-                    </div>
-                </div>
+                <div id="firebase-status-box"></div>
 
                 <div class="section">
                     <div class="section-header">
@@ -504,23 +499,69 @@
 
     /* ── INIT ─────────────────────────────────────────────── */
     async function initApp() {
+        const statusBox = document.getElementById('firebase-status-box');
+        const grid = document.getElementById('stats-grid');
+
+        // 1. Test de connectivité Firestore
         try {
-            // Initialise les données de base + test connectivité
-            await MonacoCare.seedDatabaseIfEmpty();
+            await db.collection('demo_codes').limit(1).get();
         } catch(e) {
-            // Firestore inaccessible → probablement règles expirées
-            const grid = document.getElementById('stats-grid');
-            if (grid) grid.innerHTML = `
-                <div style="grid-column:1/-1; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
-                    border-radius:12px; padding:16px 20px; color:#FCA5A5; font-size:13px; line-height:1.6;">
-                    <strong style="color:#FCA5A5;">⚠️ Firestore inaccessible.</strong><br>
-                    Les règles de sécurité Firebase sont probablement expirées (mode test = 30 jours).<br>
-                    <strong>Solution :</strong> Ouvrir la <a href="https://console.firebase.google.com/project/monaco-care/firestore/rules"
-                    target="_blank" style="color:white;">Console Firebase → Firestore → Règles</a>
-                    et republier les règles en mode test.
+            if (statusBox) statusBox.innerHTML = `
+                <div class="alert-box" style="background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.3); margin-bottom:16px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#FCA5A5;"></i>
+                    <div style="color:#FCA5A5;">
+                        <strong>Firestore inaccessible.</strong><br>
+                        Vérifiez vos règles Firebase : elles doivent autoriser la lecture/écriture.
+                    </div>
                 </div>`;
             return;
         }
+
+        // 2. Seed des données de démo (merge = ne touche pas aux données existantes)
+        try {
+            const batch = db.batch();
+            const demoPros = [
+                { id:'PRO-001', name:'Tristan', firstName:'Tristan', lastName:'', specialty:'kine',
+                  professionLabel:'Kinésithérapeute', email:'pro-001@monacocare.mc', pin:'1234', status:'active', color:'#7B1535' },
+                { id:'PRO-002', name:'Dr. Sarah Martin', firstName:'Sarah', lastName:'Martin', specialty:'medecin',
+                  professionLabel:'Médecin généraliste', email:'pro-002@monacocare.mc', pin:'1234', status:'active', color:'#315141' },
+                { id:'PRO-003', name:'Sophie Laurent', firstName:'Sophie', lastName:'Laurent', specialty:'auxiliaire',
+                  professionLabel:'Auxiliaire de vie', email:'pro-003@monacocare.mc', pin:'1234', status:'active', color:'#3B82F6' },
+            ];
+            demoPros.forEach(({ id, ...data }) =>
+                batch.set(db.collection('professionals').doc(id), data, { merge: true })
+            );
+            const [patientSnap, codeSnap] = await Promise.all([
+                db.collection('patients').doc('patient-demo').get(),
+                db.collection('demo_codes').doc('DEMO-2026').get()
+            ]);
+            if (!patientSnap.exists) {
+                batch.set(db.collection('patients').doc('patient-demo'), {
+                    name:'Jean-Pierre DUBOIS', patientId:'patient-demo', firstName:'Jean-Pierre', lastName:'DUBOIS',
+                    dateOfBirth:'1947-03-12', address:'12 Avenue de la Costa, Monaco', age:78,
+                    assignedPros:['PRO-001','PRO-002','PRO-003'], assignedFamilyCodes:['DEMO-2026'],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            if (!codeSnap.exists) {
+                batch.set(db.collection('demo_codes').doc('DEMO-2026'), {
+                    active:true, patientId:'patient-demo', label:'Famille (Code DEMO-2026)',
+                    name:'Emma Dubois', role:'Famille — Fille',
+                    expiresAt: new Date(Date.now() + 365 * 864e5).toISOString()
+                });
+            }
+            await batch.commit();
+        } catch(e) {
+            console.warn('Seed skipped:', e);
+        }
+
+        // 3. Afficher le statut OK
+        if (statusBox) statusBox.innerHTML = `
+            <div class="alert-box info" style="background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.25); margin-bottom:16px;">
+                <i class="fa-solid fa-circle-check" style="color:#10B981;"></i>
+                <div><strong style="color:#10B981;">Firebase connecté.</strong> Données synchronisées en temps réel.</div>
+            </div>`;
+
         renderStats();
         renderCodes();
         updatePendingBadge();
