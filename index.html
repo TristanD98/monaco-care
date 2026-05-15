@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -108,6 +109,12 @@
                             <button class="action-btn urgent-btn" id="flux-urgent-toggle"><i class="fa-solid fa-triangle-exclamation"></i></button>
                             <div class="input-wrapper">
                                 <input type="text" id="flux-message-input" placeholder="Écrire un message, joindre une photo...">
+                                <div class="flux-vis-row" id="flux-vis-row">
+                                    <button class="flux-vis-chip active" data-vis="public"><i class="fa-solid fa-globe"></i> Public</button>
+                                    <button class="flux-vis-chip" data-vis="medifam"><i class="fa-solid fa-users"></i> Équipe & Fam.</button>
+                                    <button class="flux-vis-chip" data-vis="medical"><i class="fa-solid fa-stethoscope"></i> Médical</button>
+                                    <button class="flux-vis-chip" data-vis="family"><i class="fa-solid fa-house-heart"></i> Famille</button>
+                                </div>
                             </div>
                             <button class="send-btn" id="flux-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>

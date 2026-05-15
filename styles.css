@@ -1259,3 +1259,51 @@ body > .phone {
 .vis-option:hover { background: var(--surface-low); }
 .vis-option i { width: 14px; text-align: center; }
 
+/* Chips de visibilité dans la zone de saisie */
+.flux-vis-row {
+    display: flex;
+    gap: 5px;
+    padding: 6px 0 2px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.flux-vis-row::-webkit-scrollbar { display: none; }
+.flux-vis-chip {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1.5px solid #dcc0c3;
+    background: white;
+    color: #897174;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.flux-vis-chip.active {
+    background: var(--monaco-red);
+    border-color: var(--monaco-red);
+    color: white;
+}
+.flux-vis-chip i { font-size: 9px; }
+
+/* Bouton supprimer sur les posts */
+.delete-post-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    line-height: 1;
+}
+.delete-post-btn:hover { color: #CE1126; }
+

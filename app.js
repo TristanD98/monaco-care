@@ -814,6 +814,12 @@ document.addEventListener('DOMContentLoaded', () => {
         post.dataset.postid = postId; // Sauvegarde ID
         post.className = 'feed-post' + isMedPost;
         
+        const currentUserName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+        const isAuthor = data.authorName === currentUserName;
+        const deleteBtn = isAuthor
+            ? `<button class="delete-post-btn" title="Supprimer ce message"><i class="fa-solid fa-trash"></i></button>`
+            : '';
+
         post.innerHTML = `
             <div class="post-header">
                 <div class="post-avatar">${(data.authorName || 'S').charAt(0)}</div>
@@ -822,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>${timeStr}</p>
                 </div>
                 <span class="visibility-tag ${tagInfo.cls}" title="Cliquer pour changer la visibilité">${tagInfo.label}</span>
+                ${deleteBtn}
             </div>
             ${imageHTML}
             <div class="post-content"><p>${data.text}</p></div>
@@ -830,6 +837,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>
             </div>
         `;
+
+        // Bouton supprimer
+        const delBtn = post.querySelector('.delete-post-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', () => {
+                if (!confirm('Supprimer ce message définitivement ?')) return;
+                db.collection('posts').doc(postId).delete()
+                    .catch(() => alert('Impossible de supprimer le message.'));
+            });
+        }
 
         bindPostActions(post);
         bindVisibilityTag(post);
@@ -852,11 +869,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleJob = roleSelect.options[roleSelect.selectedIndex].text.split('(')[1]?.replace(')','') || role;
 
         const isUrgent = actionText.startsWith('⚠️ URGENT');
-        const isMedical = role === 'medecin' || actionText.toLowerCase().includes('prescription') || actionText.toLowerCase().includes('médical');
-        
-        let visibility = 'medifam';
-        if (isUrgent) visibility = 'urgent';
-        else if (isMedical) visibility = 'medical';
+
+        // Utiliser la visibilité choisie par l'utilisateur via les chips
+        // Sauf si le message est urgent (prioritaire)
+        let visibility = isUrgent ? 'urgent' : selectedVisibility;
 
         const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
 
@@ -967,9 +983,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- FLUX ATTACHEMENTS (PHOTO RÉELLE) --- */
+    /* --- CHIPS DE VISIBILITÉ (zone de saisie) --- */
+    let selectedVisibility = 'public'; // valeur par défaut
+
+    const fluxVisChips = document.querySelectorAll('.flux-vis-chip');
+    fluxVisChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            fluxVisChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            selectedVisibility = chip.getAttribute('data-vis');
+        });
+    });
+
+    /* --- FLUX ATTACHEMENTS — upload vers Firebase Storage --- */
     if(fluxAttachBtn) {
-        // Créer un input file caché
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
@@ -978,43 +1005,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fluxAttachBtn.addEventListener('click', () => fileInput.click());
 
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const imageDataUrl = ev.target.result;
-                const role = roleSelect.value;
-                const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
-                const now = new Date();
-                const timeStr = `Aujourd'hui \u00b7 ${now.getHours().toString().padStart(2,'0')}h${now.getMinutes().toString().padStart(2,'0')}`;
 
+            // Feedback visuel pendant l'upload
+            fluxAttachBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            fluxAttachBtn.disabled = true;
 
-                const fluxFeed = document.getElementById('flux-feed');
-                const post = document.createElement('div');
-                post.className = 'feed-post';
-                post.innerHTML = `
-                    <div class="post-header">
-                        <div class="post-avatar">${roleName.charAt(0)}</div>
-                        <div class="post-meta">
-                            <h4>${roleName}</h4>
-                            <p>${timeStr}</p>
-                        </div>
-                        <span class="visibility-tag tag-team">ÉQUIPE &amp; FAMILLE</span>
-                    </div>
-                    <img class="post-image" src="${imageDataUrl}" alt="Photo partagée">
-                    <div class="post-actions">
-                        <button class="reply-btn"><i class="fa-regular fa-comment"></i> Commenter</button>
-                    </div>
-                    <div class="post-comments"></div>
-                `;
-                bindPostActions(post);
-                post.style.opacity = '0';
-                fluxFeed.insertBefore(post, fluxFeed.firstChild);
-                setTimeout(() => post.style.opacity = '1', 50);
-                fileInput.value = ''; // reset
-            };
-            reader.readAsDataURL(file);
+            try {
+                const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+                const fileName = `posts/${patientId}/${Date.now()}_${file.name}`;
+                const ref = storage.ref().child(fileName);
+
+                await ref.put(file);
+                const imageUrl = await ref.getDownloadURL();
+
+                await publishToFeed(fluxMessageInput.value.trim() || '📷 Photo partagée', imageUrl);
+                fluxMessageInput.value = '';
+            } catch(err) {
+                console.error('Erreur upload image:', err);
+                alert('Impossible d\'uploader l\'image. Vérifiez les règles Firebase Storage.');
+            } finally {
+                fluxAttachBtn.innerHTML = '<i class="fa-solid fa-paperclip"></i>';
+                fluxAttachBtn.disabled = false;
+                fileInput.value = '';
+            }
         });
     }
 
@@ -1024,10 +1040,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if(rawText !== '') {
                 const isUrgent = fluxUrgentToggle.classList.contains('active');
                 const urgencyPrefix = isUrgent ? '⚠️ URGENT: ' : '';
-                // Trick to reuse standard feed function
                 publishToFeed(urgencyPrefix + rawText);
                 fluxMessageInput.value = '';
-                
+
                 // Reset urgent toggle
                 fluxUrgentToggle.classList.remove('active');
                 fluxUrgentToggle.style.backgroundColor = 'var(--silver-light)';
