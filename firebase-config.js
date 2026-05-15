@@ -324,50 +324,51 @@ const MonacoCare = (() => {
         }
     };
 
-    /** MIGRATION - SCRIPT DE DEMARRAGE (Crée un patient et un code démo si la BDD est vierge) */
+    /** MIGRATION - SCRIPT DE DEMARRAGE */
     async function seedDatabaseIfEmpty() {
         try {
+            // Toujours s'assurer que les pros démo ont des champs complets (merge = n'écrase pas ce qui existe)
+            const batch = db.batch();
+            const DEMO_PROS_FULL = [
+                { id: 'PRO-001', name: 'Tristan', firstName: 'Tristan', lastName: '', specialty: 'kine',
+                  professionLabel: 'Kinésithérapeute', email: 'pro-001@monacocare.mc', pin: '1234',
+                  status: 'active', color: '#7B1535', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+                { id: 'PRO-002', name: 'Dr. Sarah Martin', firstName: 'Sarah', lastName: 'Martin', specialty: 'medecin',
+                  professionLabel: 'Médecin généraliste', email: 'pro-002@monacocare.mc', pin: '1234',
+                  status: 'active', color: '#315141', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+                { id: 'PRO-003', name: 'Sophie Laurent', firstName: 'Sophie', lastName: 'Laurent', specialty: 'auxiliaire',
+                  professionLabel: 'Auxiliaire de vie', email: 'pro-003@monacocare.mc', pin: '1234',
+                  status: 'active', color: '#3B82F6', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+            ];
+            DEMO_PROS_FULL.forEach(({ id, ...data }) => {
+                batch.set(db.collection('professionals').doc(id), data, { merge: true });
+            });
+            await batch.commit();
+
+            // Créer le reste uniquement si la DB est vierge (premier lancement)
             const snap = await db.collection('demo_codes').limit(1).get();
             if(snap.empty) {
                 console.log("Initialisation des données de base Firebase...");
-                const batch = db.batch();
-                batch.set(db.collection('patients').doc('patient-demo'), {
+                const batch2 = db.batch();
+                batch2.set(db.collection('patients').doc('patient-demo'), {
                     name: 'Jean-Pierre DUBOIS', patientId: 'patient-demo', firstName: 'Jean-Pierre',
                     lastName: 'DUBOIS', dateOfBirth: '1947-03-12', address: '12 Avenue de la Costa, Monaco',
                     age: 78, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003'], assignedFamilyCodes: ['DEMO-2026'],
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                batch.set(db.collection('demo_codes').doc('DEMO-2026'), {
+                batch2.set(db.collection('demo_codes').doc('DEMO-2026'), {
                     active: true, patientId: 'patient-demo', label: 'Famille (Code DEMO-2026)',
-                    name: 'Emma Dubois', // Ajout d'un nom pour le chat
-                    role: 'Famille — Fille',
+                    name: 'Emma Dubois', role: 'Famille — Fille',
                     expiresAt: new Date(Date.now() + 365 * 864e5).toISOString()
                 });
-                // Ajouter les pros de l'équipe
-                batch.set(db.collection('professionals').doc('PRO-001'), {
-                    name: 'Tristan', role: 'Kinésithérapeute', status: 'active', color: '#7B1535'
-                });
-                batch.set(db.collection('professionals').doc('PRO-002'), {
-                    name: 'Dr. Sarah Martin', role: 'Médecin Généraliste', status: 'active', color: '#315141'
-                });
-                batch.set(db.collection('professionals').doc('PRO-003'), {
-                    name: 'Sophie Laurent', role: 'Auxiliaire de vie', status: 'active', color: '#3B82F6'
-                });
-
-                // Ajouter un post initial au flux
                 const initialPostRef = db.collection('posts').doc();
-                batch.set(initialPostRef, {
-                    patientId: 'patient-demo',
-                    authorName: 'Système',
-                    authorRole: 'Monaco Care',
+                batch2.set(initialPostRef, {
+                    patientId: 'patient-demo', authorName: 'Système', authorRole: 'Monaco Care',
                     text: 'Bienvenue sur le flux d\'actualité partagé de Monaco Care. L\'équipe soignante publiera les mises à jour ici.',
-                    visibility: 'public',
-                    isUrgent: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    imageUrl: null
+                    visibility: 'public', isUrgent: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(), imageUrl: null
                 });
-                
-                await batch.commit();
+                await batch2.commit();
             }
         } catch(e) { console.warn("Seed skipped: ", e); }
     }

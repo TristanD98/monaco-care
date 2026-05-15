@@ -673,8 +673,8 @@
                     return `<tr>
                         <td><code style="font-size:12px; color:var(--muted);">${proId}</code></td>
                         <td style="font-weight:600;">${p.name}</td>
-                        <td style="color:var(--muted); font-size:12px;">${specialtyLabels[p.specialty] || p.specialty}</td>
-                        <td style="color:var(--muted); font-size:12px;">${p.email}</td>
+                        <td style="color:var(--muted); font-size:12px;">${specialtyLabels[p.specialty] || p.professionLabel || p.role || '—'}</td>
+                        <td style="color:var(--muted); font-size:12px;">${p.email || '—'}</td>
                         <td><span class="badge-status ${status}">${p.status === 'active' ? 'Actif' : 'Suspendu'}</span></td>
                         <td style="font-size:12px; color:var(--muted);">${lastLogin}</td>
                         <td style="display:flex; gap:8px; padding-top:14px; flex-wrap:wrap;">
