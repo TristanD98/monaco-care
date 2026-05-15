@@ -267,9 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
             vitalsGrid.innerHTML = '<div style="text-align:center;color:gray;grid-column:1/-1;">Chargement...</div>';
 
             const VITAL_TYPES = [
-                { type: 'Rythme Cardiaque',   unit: 'bpm',  placeholder: '72' },
-                { type: 'Tension Artérielle', unit: 'mmHg', placeholder: '120/80' },
-                { type: 'Température',        unit: '°C',   placeholder: '37.2' },
+                { type: 'Rythme Cardiaque',   unit: 'bpm',  placeholder: '72',    icon: 'fa-heart-pulse',    color: '#CE1126', bg: 'rgba(206,17,38,0.1)' },
+                { type: 'Tension Artérielle', unit: 'mmHg', placeholder: '120/80', icon: 'fa-gauge-high',    color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
+                { type: 'Température',        unit: '°C',   placeholder: '37.2',   icon: 'fa-temperature-half', color: '#F97316', bg: 'rgba(249,115,22,0.1)' },
             ];
 
             const unsubVitals = db.collection('medical_vitals')
@@ -293,13 +293,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Toujours afficher les 3 cartes, cliquables, vides ou non
                     VITAL_TYPES.forEach(meta => {
                         const d = byType[meta.type] || null;
+
+                        // Détecter l'état (normal / alerte)
+                        let statusLabel = 'Appuyer pour saisir';
+                        let statusColor = '#94a3b8';
+                        let badgeCls = 'empty';
+                        if (d) {
+                            if (d.status === 'alert') {
+                                statusLabel = '⚠️ À surveiller';
+                                statusColor = '#CE1126';
+                                badgeCls = 'alert';
+                            } else {
+                                statusLabel = '✓ Normal';
+                                statusColor = '#10B981';
+                                badgeCls = 'normal';
+                            }
+                        }
+
                         const div = document.createElement('div');
                         div.className = 'vital-card';
-                        div.style.cursor = 'pointer';
                         div.title = 'Cliquer pour mettre à jour';
                         div.innerHTML = `
-                            <h4>${meta.type}</h4>
-                            <div class="value" style="${!d ? 'opacity:0.35;' : ''}">${d ? d.value : '--'} <span class="unit">${meta.unit}</span></div>
+                            <div class="vital-icon-bubble" style="background:${meta.bg}; color:${meta.color};">
+                                <i class="fa-solid ${meta.icon}"></i>
+                            </div>
+                            <div class="vital-info">
+                                <div class="vital-label">${meta.type}</div>
+                                ${d
+                                    ? `<div class="vital-value">${d.value}<span class="vital-unit">${meta.unit}</span></div>`
+                                    : `<div class="vital-value empty">--</div>`
+                                }
+                                <div class="vital-status" style="color:${statusColor};">${statusLabel}</div>
+                            </div>
+                            <div class="vital-badge ${badgeCls}"></div>
                         `;
                         div.addEventListener('click', () => promptVital(meta.type, meta.unit, meta.placeholder));
                         vitalsGrid.appendChild(div);
