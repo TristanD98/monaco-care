@@ -910,21 +910,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.createElement('button');
                 btn.className = 'vis-option';
                 btn.innerHTML = `<i class="fa-solid ${opt.icon}"></i> ${opt.label}`;
-                btn.addEventListener('click', async (ev) => {
+                btn.addEventListener('click', (ev) => {
                     ev.stopPropagation();
+                    popup.remove();
+
+                    // Mise à jour DOM immédiate (feedback instantané, indépendant de onSnapshot)
+                    tag.className = `visibility-tag ${opt.cls}`;
+                    tag.textContent = opt.label;
+
+                    // Persistance Firestore en arrière-plan
                     const postId = post.dataset.postid;
                     if (postId) {
-                        try {
-                            await db.collection('posts').doc(postId).update({
-                                visibility: opt.key
+                        db.collection('posts').doc(postId).update({ visibility: opt.key })
+                            .catch(err => {
+                                console.error("Erreur mise à jour visibilité: ", err);
+                                alert("Impossible de modifier la visibilité.");
                             });
-                            // Le onSnapshot s'occupera de mettre à jour le DOM
-                        } catch (err) {
-                            console.error("Erreur mise à jour visibilité: ", err);
-                            alert("Impossible de modifier la visibilité.");
-                        }
                     }
-                    popup.remove();
                 });
                 popup.appendChild(btn);
             });
