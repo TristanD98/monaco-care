@@ -1259,39 +1259,36 @@ body > .phone {
 .vis-option:hover { background: var(--surface-low); }
 .vis-option i { width: 14px; text-align: center; }
 
-/* Chips de visibilité dans la zone de saisie */
-.flux-vis-row {
-    display: flex;
-    gap: 5px;
-    padding: 6px 0 2px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-.flux-vis-row::-webkit-scrollbar { display: none; }
-.flux-vis-chip {
-    flex-shrink: 0;
-    font-size: 10px;
-    font-weight: 600;
-    font-family: inherit;
-    padding: 3px 8px;
-    border-radius: 999px;
-    border: 1.5px solid #dcc0c3;
+/* Menu déroulant visibilité au clic sur la flèche d'envoi */
+.send-vis-popup {
     background: white;
-    color: #897174;
-    cursor: pointer;
-    transition: all 0.15s;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    min-width: 190px;
+    overflow: hidden;
+    animation: dropIn 0.12s ease;
+}
+.send-vis-option {
     display: flex;
     align-items: center;
-    gap: 4px;
-    white-space: nowrap;
+    gap: 10px;
+    padding: 11px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    transition: background 0.1s;
+    border-bottom: 1px solid #f0e8e9;
 }
-.flux-vis-chip.active {
-    background: var(--monaco-red);
-    border-color: var(--monaco-red);
-    color: white;
-}
-.flux-vis-chip i { font-size: 9px; }
+.send-vis-option:last-child { border-bottom: none; }
+.send-vis-option:hover { background: var(--surface-low); }
+.send-vis-option i { width: 14px; text-align: center; color: var(--monaco-red); }
 
 /* Bouton supprimer sur les posts */
 .delete-post-btn {

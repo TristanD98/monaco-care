@@ -983,17 +983,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* --- CHIPS DE VISIBILITÉ (zone de saisie) --- */
-    let selectedVisibility = 'public'; // valeur par défaut
-
-    const fluxVisChips = document.querySelectorAll('.flux-vis-chip');
-    fluxVisChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            fluxVisChips.forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            selectedVisibility = chip.getAttribute('data-vis');
-        });
-    });
+    /* --- VISIBILITÉ AVANT ENVOI (menu déroulant sur la flèche) --- */
+    let selectedVisibility = 'medifam'; // valeur par défaut
 
     /* --- FLUX ATTACHEMENTS — upload vers Firebase Storage --- */
     if(fluxAttachBtn) {
@@ -1037,17 +1028,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if(fluxSendBtn) {
         fluxSendBtn.addEventListener('click', () => {
             const rawText = fluxMessageInput.value.trim();
-            if(rawText !== '') {
-                const isUrgent = fluxUrgentToggle.classList.contains('active');
-                const urgencyPrefix = isUrgent ? '⚠️ URGENT: ' : '';
-                publishToFeed(urgencyPrefix + rawText);
-                fluxMessageInput.value = '';
+            if (!rawText) return;
 
-                // Reset urgent toggle
+            // Fermer tout popup existant
+            document.querySelectorAll('.send-vis-popup').forEach(p => p.remove());
+
+            const isUrgent = fluxUrgentToggle.classList.contains('active');
+
+            // Si urgent, on envoie directement sans demander la visibilité
+            if (isUrgent) {
+                publishToFeed('⚠️ URGENT: ' + rawText);
+                fluxMessageInput.value = '';
                 fluxUrgentToggle.classList.remove('active');
                 fluxUrgentToggle.style.backgroundColor = 'var(--silver-light)';
                 fluxUrgentToggle.style.color = 'var(--text-muted)';
+                return;
             }
+
+            // Sinon : afficher le menu de visibilité au-dessus de la flèche
+            const rect = fluxSendBtn.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.className = 'send-vis-popup';
+            popup.style.cssText = `
+                position: fixed;
+                bottom: ${window.innerHeight - rect.top + 8}px;
+                right: ${window.innerWidth - rect.right}px;
+                z-index: 9999;
+            `;
+
+            const SEND_VIS_OPTIONS = [
+                { key: 'public',  label: 'Public',             icon: 'fa-globe' },
+                { key: 'medifam', label: 'Équipe & Famille',   icon: 'fa-users' },
+                { key: 'medical', label: 'Médical uniquement', icon: 'fa-stethoscope' },
+                { key: 'family',  label: 'Famille uniquement', icon: 'fa-house-heart' },
+            ];
+
+            SEND_VIS_OPTIONS.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'send-vis-option';
+                btn.innerHTML = `<i class="fa-solid ${opt.icon}"></i> ${opt.label}`;
+                btn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    selectedVisibility = opt.key;
+                    popup.remove();
+                    publishToFeed(rawText);
+                    fluxMessageInput.value = '';
+                });
+                popup.appendChild(btn);
+            });
+
+            document.body.appendChild(popup);
+            setTimeout(() => {
+                document.addEventListener('click', () => popup.remove(), { once: true });
+            }, 10);
         });
     }
 
