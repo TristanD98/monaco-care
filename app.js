@@ -566,7 +566,15 @@ document.addEventListener('DOMContentLoaded', () => {
                          let timeDisplay = "";
                          if(data.createdAt) {
                              const d = data.createdAt.toDate();
-                             timeDisplay = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+                             const today = new Date();
+                             const isToday = d.toDateString() === today.toDateString();
+                             const yesterday = new Date(today);
+                             yesterday.setDate(today.getDate() - 1);
+                             const isYesterday = d.toDateString() === yesterday.toDateString();
+                             const timeStr = d.getHours().toString().padStart(2,'0') + 'h' + d.getMinutes().toString().padStart(2,'0');
+                             if (isToday) timeDisplay = `Aujourd'hui · ${timeStr}`;
+                             else if (isYesterday) timeDisplay = `Hier · ${timeStr}`;
+                             else timeDisplay = d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) + ' · ' + timeStr;
                          }
 
                         msgDiv.innerHTML = `
@@ -703,7 +711,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatTime(dateObj) {
         if(!dateObj) return "À l'instant";
         const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
-        return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+        const today = new Date();
+        const isToday = d.toDateString() === today.toDateString();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const isYesterday = d.toDateString() === yesterday.toDateString();
+
+        const timeStr = d.getHours().toString().padStart(2,'0') + 'h' + d.getMinutes().toString().padStart(2,'0');
+
+        if (isToday) return `Aujourd'hui · ${timeStr}`;
+        if (isYesterday) return `Hier · ${timeStr}`;
+
+        const dateStr = d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+        return `${dateStr} · ${timeStr}`;
     }
 
     function loadRealtimeFeed(patientId) {
@@ -943,7 +963,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const role = roleSelect.value;
                 const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
                 const now = new Date();
-                const timeStr = "À l'instant (" + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ')';
+                const timeStr = `Aujourd'hui \u00b7 ${now.getHours().toString().padStart(2,'0')}h${now.getMinutes().toString().padStart(2,'0')}`;
+
 
                 const fluxFeed = document.getElementById('flux-feed');
                 const post = document.createElement('div');
