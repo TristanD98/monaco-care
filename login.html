@@ -885,7 +885,10 @@
         const codeInput = document.getElementById('family-code-input');
         if (codeInput) {
             codeInput.addEventListener('input', (e) => {
-                let val = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                // Normaliser: décomposer les accents (é→e+accent) puis supprimer les marques d'accent
+                let val = e.target.value
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^A-Za-z0-9]/g, '').toUpperCase();
                 if (val.length > 4) val = val.slice(0, 4) + '-' + val.slice(4, 8);
                 e.target.value = val;
             });

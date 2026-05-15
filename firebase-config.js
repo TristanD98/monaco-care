@@ -389,5 +389,5 @@ const MonacoCare = (() => {
         window.location.replace(window.location.pathname);
     }
 
-    return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, switchPatient, admin };
+    return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, switchPatient, admin, seedDatabaseIfEmpty };
 })();
