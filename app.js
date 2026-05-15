@@ -294,20 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     VITAL_TYPES.forEach(meta => {
                         const d = byType[meta.type] || null;
 
-                        // Détecter l'état (normal / alerte)
-                        let statusLabel = 'Appuyer pour saisir';
-                        let statusColor = '#94a3b8';
+                        // État pour le badge couleur uniquement (sans label)
                         let badgeCls = 'empty';
                         if (d) {
-                            if (d.status === 'alert') {
-                                statusLabel = '⚠️ À surveiller';
-                                statusColor = '#CE1126';
-                                badgeCls = 'alert';
-                            } else {
-                                statusLabel = '✓ Normal';
-                                statusColor = '#10B981';
-                                badgeCls = 'normal';
-                            }
+                            badgeCls = d.status === 'alert' ? 'alert' : 'normal';
                         }
 
                         const div = document.createElement('div');
@@ -323,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ? `<div class="vital-value">${d.value}<span class="vital-unit">${meta.unit}</span></div>`
                                     : `<div class="vital-value empty">--</div>`
                                 }
-                                <div class="vital-status" style="color:${statusColor};">${statusLabel}</div>
                             </div>
                             <div class="vital-badge ${badgeCls}"></div>
                         `;
