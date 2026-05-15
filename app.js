@@ -294,11 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     VITAL_TYPES.forEach(meta => {
                         const d = byType[meta.type] || null;
 
-                        // État pour le badge couleur uniquement (sans label)
-                        let badgeCls = 'empty';
-                        if (d) {
-                            badgeCls = d.status === 'alert' ? 'alert' : 'normal';
-                        }
 
                         const div = document.createElement('div');
                         div.className = 'vital-card';
@@ -314,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     : `<div class="vital-value empty">--</div>`
                                 }
                             </div>
-                            <div class="vital-badge ${badgeCls}"></div>
                         `;
                         div.addEventListener('click', () => promptVital(meta.type, meta.unit, meta.placeholder));
                         vitalsGrid.appendChild(div);
