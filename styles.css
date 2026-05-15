@@ -1230,16 +1230,12 @@ body > .phone {
     opacity: 0.6;
 }
 
-/* Popup de choix de visibilité */
+/* Popup de choix de visibilité — positionné en fixed via JS (getBoundingClientRect) */
 .visibility-popup {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
     background: white;
     border-radius: 10px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    z-index: 500;
-    min-width: 160px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    min-width: 175px;
     overflow: hidden;
     animation: dropIn 0.12s ease;
 }

@@ -895,32 +895,33 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fermer tout popup existant
             document.querySelectorAll('.visibility-popup').forEach(p => p.remove());
 
+            // Positionner le popup en fixed par rapport au viewport (évite le clipping par overflow:hidden de .feed-post)
+            const rect = tag.getBoundingClientRect();
             const popup = document.createElement('div');
             popup.className = 'visibility-popup';
+            popup.style.cssText = `
+                position: fixed;
+                top: ${rect.bottom + 6}px;
+                left: ${Math.min(rect.left, window.innerWidth - 175)}px;
+                z-index: 9999;
+            `;
+
             VISIBILITY_OPTIONS.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = 'vis-option';
                 btn.innerHTML = `<i class="fa-solid ${opt.icon}"></i> ${opt.label}`;
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', async (ev) => {
+                    ev.stopPropagation();
                     const postId = post.dataset.postid;
                     if (postId) {
                         try {
                             await db.collection('posts').doc(postId).update({
                                 visibility: opt.key
                             });
-                            // Le onSnapshot s'occupera de mettre à jour le DOM !
+                            // Le onSnapshot s'occupera de mettre à jour le DOM
                         } catch (err) {
                             console.error("Erreur mise à jour visibilité: ", err);
                             alert("Impossible de modifier la visibilité.");
-                        }
-                    } else {
-                        // Fallback pour anciens posts non-firebase (si besoin, temporaire)
-                        tag.className = `visibility-tag ${opt.cls}`;
-                        tag.textContent = opt.label;
-                        if (opt.key === 'medical') {
-                            post.classList.add('medical-only-post');
-                        } else {
-                            post.classList.remove('medical-only-post');
                         }
                     }
                     popup.remove();
@@ -928,8 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 popup.appendChild(btn);
             });
 
-            tag.style.position = 'relative';
-            tag.appendChild(popup);
+            document.body.appendChild(popup);
 
             // Fermer en cliquant ailleurs
             setTimeout(() => {
