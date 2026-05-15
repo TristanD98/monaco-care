@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let vaultUnlocked = false;
     let fluxListener = null;
     let currentChatListener = null;
+    let activeFilter = 'all'; // Filtre actif du flux ('all', 'medical', 'team', 'public')
+
+    // Règles de visibilité : retourne true si le rôle peut voir ce post
+    function canSeePost(data, role) {
+        const visibility = data.visibility || 'medifam';
+        switch(visibility) {
+            case 'public':
+                return true;
+            case 'medical':
+                return role !== 'family' && role !== 'auxiliaire';
+            case 'medifam':
+                return true;
+            case 'family':
+                return role === 'family';
+            default:
+                return true;
+        }
+    }
 
     // Chat Elements
     const chatRoomView = document.getElementById('chat-room-view');
@@ -765,11 +783,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const role = roleSelect.value;
         const postId = docSnap.id;
 
-        // Filtre d'affichage côté client selon le rôle
-        // Si je suis family, je ne vois pas les posts 'medical'
-        // Si je suis auxiliaire, je ne vois pas les posts 'medical' non plus (en théorie, à ajuster)
-        if (data.visibility === 'medical' && (role === 'family' || role === 'auxiliaire')) {
-            return; 
+        // Filtre par rôle : qui a le droit de voir ce post ?
+        if (!canSeePost(data, role)) return;
+
+        // Filtre actif sélectionné par l'utilisateur dans le menu du haut
+        if (activeFilter !== 'all') {
+            const visibility = data.visibility || 'medifam';
+            if (activeFilter === 'medical' && visibility !== 'medical') return;
+            if (activeFilter === 'team'    && visibility !== 'medifam') return;
+            if (activeFilter === 'public'  && visibility !== 'public')  return;
         }
 
         const tagMap = {
@@ -1471,38 +1493,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filterOptions.forEach(option => {
             option.addEventListener('click', (e) => {
-                const filterType = e.target.getAttribute('data-filter');
-                const filterText = e.target.innerText;
-                
-                // Update button text
-                currentFilterName.innerText = filterText;
+                const filterType = e.currentTarget.getAttribute('data-filter');
+
+                // Mémoriser le filtre actif
+                activeFilter = filterType;
+
+                // Mettre à jour l'affichage du bouton
+                currentFilterName.innerText = e.currentTarget.innerText;
                 fluxFilterMenu.classList.add('hidden');
-                
-                // Bold active option
+
+                // Marquer l'option active en gras
                 filterOptions.forEach(opt => opt.style.fontWeight = 'normal');
-                e.target.style.fontWeight = 'bold';
+                e.currentTarget.style.fontWeight = 'bold';
 
-                // Apply filter
-                const posts = document.querySelectorAll('.feed-post');
-                posts.forEach(post => {
-                    // Check tags to determine category
-                    let tagMedical = post.querySelector('.tag-medical');
-                    let tagTeam = post.querySelector('.tag-team');
-                    let tagPublic = post.querySelector('.tag-public');
-
-                    if (filterType === 'all') {
-                        post.style.display = 'flex'; // Restore based on default display
-                    } else if (filterType === 'medical') {
-                        post.style.display = tagMedical ? 'flex' : 'none';
-                    } else if (filterType === 'team') {
-                        post.style.display = tagTeam ? 'flex' : 'none';
-                    } else if (filterType === 'public') {
-                        post.style.display = tagPublic ? 'flex' : 'none';
-                    }
-                });
-
-                // Enforce role constraints (e.g. assistants shouldn't see medical posts even if they filtered logic tried to)
-                updateRoleUI();
+                // Recharger le feed — renderRealtimePost appliquera rôle + filtre actif
+                const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+                const fluxFeed = document.getElementById('flux-feed');
+                if (fluxFeed) fluxFeed.innerHTML = '';
+                loadRealtimeFeed(patientId);
             });
         });
     }
