@@ -101,6 +101,8 @@ const MonacoCare = (() => {
             'PRO-001': { pin: '1234', name: 'Tristan — Kinésithérapeute', specialty: 'Kinésithérapeute' },
             'PRO-002': { pin: '1234', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
             'PRO-003': { pin: '1234', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
+            'INT-001': { pin: '1234', name: 'Leïla', specialty: 'helper' },
+            'INT-002': { pin: '1234', name: 'Max', specialty: 'helper' },
         };
         const proUpper = proId.toUpperCase().trim();
         if (DEMO_PROS[proUpper] && pin === DEMO_PROS[proUpper].pin) {
