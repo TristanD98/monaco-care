@@ -478,7 +478,7 @@
                 <i class="fa-solid fa-chevron-right" style="color:rgba(255,255,255,0.25); margin-left:auto;"></i>
             </button>
 
-            <button class="role-btn" id="btn-helper" onclick="showStep('pro')">
+            <button class="role-btn" id="btn-helper" onclick="showStep('helper')">
                 <div class="role-icon pro" style="background: rgba(255,255,255,0.1);">
                     <i class="fa-solid fa-hand-holding-heart"></i>
                 </div>
@@ -692,6 +692,89 @@
         </div>
 
 
+        <!-- STEP 2D: Professionnel (Accompagnant / Intervenant) -->
+        <div id="step-helper" style="display:none;">
+            <button class="back-link" onclick="showStep('choose')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <p class="step-title">Professionnel</p>
+
+            <div class="pro-tabs">
+                <button class="pro-tab active" id="tab-helper-login" onclick="switchHelperTab('login')">Connexion</button>
+                <button class="pro-tab" id="tab-helper-register" onclick="switchHelperTab('register')">S'inscrire</button>
+            </div>
+
+            <!-- Connexion -->
+            <div id="helper-login-form">
+                <div class="form-group">
+                    <label class="form-label">Identifiant professionnel</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-id-card"></i>
+                        <input type="text" id="helper-id-input" class="form-input"
+                            placeholder="Ex: PRO-003"
+                            autocomplete="username" autocapitalize="characters">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Code d'accès</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="helper-pin-input" class="form-input"
+                            placeholder="••••••" autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="helper-remember-me" checked>
+                    <label for="helper-remember-me">Rester connecté sur cet appareil</label>
+                </div>
+
+                <button class="btn-primary" id="btn-helper-login" onclick="loginHelper()">
+                    Se connecter
+                </button>
+
+                <div class="feedback" id="helper-login-feedback"></div>
+            </div>
+
+            <!-- Inscription -->
+            <div id="helper-register-form" style="display:none;">
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Prénom</label>
+                        <input type="text" id="hreg-firstname" class="form-input" placeholder="Marie">
+                    </div>
+                    <div class="form-group" style="flex:1; margin-bottom:12px;">
+                        <label class="form-label">Nom</label>
+                        <input type="text" id="hreg-lastname" class="form-input" placeholder="DUPONT">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rôle / Métier</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-briefcase"></i>
+                        <input type="text" id="hreg-profession" class="form-input" placeholder="Ex : Auxiliaire de vie">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-mobile"></i>
+                        <input type="tel" id="hreg-phone" class="form-input" placeholder="06 XX XX XX XX">
+                    </div>
+                </div>
+                <div class="checkbox-row" style="margin-top:16px;">
+                    <input type="checkbox" id="hreg-consent">
+                    <label for="hreg-consent" style="font-size:11px; line-height:1.4;">J'accepte que mes données soient traitées. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
+                </div>
+                <button class="btn-primary" id="btn-helper-register" onclick="registerHelper()">
+                    Envoyer la demande
+                </button>
+                <div class="feedback" id="helper-register-feedback"></div>
+            </div>
+        </div>
+
     </div><!-- /card -->
 
     <div class="login-footer">
@@ -724,7 +807,7 @@
     /* ============================================================
        NAVIGATION ENTRE LES ÉTAPES
     ============================================================ */
-    const ALL_STEPS = ['choose','family','pro','family-request'];
+    const ALL_STEPS = ['choose','family','pro','family-request','helper'];
     function showStep(step) {
         ALL_STEPS.forEach(s => {
             const el = document.getElementById('step-' + s);
