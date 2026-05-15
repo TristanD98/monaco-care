@@ -109,69 +109,92 @@
         }
 
         function selectPatient(patientId, patientName) {
-            // Save selection to pass to index.html
-            let session = JSON.parse(localStorage.getItem('mc_session')) || JSON.parse(sessionStorage.getItem('mc_session'));
-            if(session) {
-                session.patientId = patientId;
-                session.patientName = patientName;
-                session.patientInfo = "ID: " + patientId;
-                if (localStorage.getItem('mc_session')) localStorage.setItem('mc_session', JSON.stringify(session));
-                else sessionStorage.setItem('mc_session', JSON.stringify(session));
-            }
-            window.location.href = 'index.html?patientId=' + patientId;
+            MonacoCare.switchPatient(patientId, patientName);
         }
 
-        function loadPatients() {
+        function patientCard(p) {
+            const initials = (p.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+            const subtitle = [p.age ? p.age + ' ans' : '', p.address || ''].filter(Boolean).join(' · ');
+            return `<div onclick="selectPatient('${p.patientId}', '${(p.name||'').replace(/'/g, "\\'")}')"
+                style="background:white; border-radius:14px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.06);
+                    display:flex; align-items:center; gap:14px; cursor:pointer; border:1px solid #E2E8F0;
+                    transition:box-shadow .2s, transform .15s;"
+                onmouseenter="this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'; this.style.transform='translateY(-1px)'"
+                onmouseleave="this.style.boxShadow='0 2px 10px rgba(0,0,0,0.06)'; this.style.transform=''">
+                <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#7B1535,#CE1126);
+                    display:flex; align-items:center; justify-content:center; flex-shrink:0; color:white; font-weight:700; font-size:15px;">
+                    ${initials}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <h4 style="font-size:15px; font-weight:700; margin-bottom:3px; color:#1A1A2E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</h4>
+                    <p style="font-size:12px; color:#6B7280;">${subtitle}</p>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#dcc0c3; flex-shrink:0;"></i>
+            </div>`;
+        }
+
+        async function loadPatients() {
             const list = document.getElementById('patients-list');
-            let html = `
-                <div class="patient-card" onclick="selectPatient('patient-demo', 'Charles Leclerc')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s;">
-                    <img src="https://i.pravatar.cc/150?u=charlesleclerc" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-                    <div style="flex:1;">
-                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">Charles Leclerc</h4>
-                        <p style="font-size:12px; color:#6B7280;">Dernière act. il y a 2h</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
-                </div>
-            `;
-            
-            let customPatients = JSON.parse(localStorage.getItem('mc_custom_patients') || '[]');
-            customPatients.forEach((patient, idx) => {
-                html += `
-                <div class="patient-card" onclick="selectPatient('${patient.id}', '${patient.name.replace(/'/g, "\\'")}')" style="background:white; border-radius:12px; padding:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:15px; cursor:pointer; border:1px solid #E2E8F0; transition:all 0.2s; margin-top:10px;">
-                    <img src="https://i.pravatar.cc/150?u=${idx}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-                    <div style="flex:1;">
-                        <h4 style="font-size:15px; margin-bottom:4px; color:#1A1A2E;">${patient.name}</h4>
-                        <p style="font-size:12px; color:#6B7280;">Nouveau patient (Accès approuvé)</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#dcc0c3;"></i>
-                </div>
-                `;
-            });
-            
-            list.innerHTML = html;
-            
-            // Show fake notification for demo purposes
-            document.getElementById('pending-patient-requests').style.display = 'flex';
+            list.innerHTML = '<div style="text-align:center; padding:30px; color:#6B7280;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+
+            try {
+                const session = MonacoCare.getSession();
+                const proId = session ? session.proId : null;
+
+                let snap;
+                if (proId) {
+                    snap = await db.collection('patients')
+                        .where('assignedPros', 'array-contains', proId)
+                        .get();
+                } else {
+                    snap = await db.collection('patients').get();
+                }
+
+                let patients = snap.docs.map(d => d.data());
+
+                // Fallback si Firestore vide
+                if (!patients.length) {
+                    patients = [{
+                        patientId: 'patient-demo',
+                        name: 'Jean-Pierre DUBOIS',
+                        age: 78,
+                        address: '12 Avenue de la Costa, Monaco'
+                    }];
+                }
+
+                list.innerHTML = patients.map(patientCard).join('');
+
+            } catch(e) {
+                console.error('loadPatients:', e);
+                // Fallback en cas d'erreur Firestore
+                list.innerHTML = patientCard({
+                    patientId: 'patient-demo',
+                    name: 'Jean-Pierre DUBOIS',
+                    age: 78,
+                    address: '12 Avenue de la Costa, Monaco'
+                });
+            }
+
+            // Masquer la fausse notification de démo
+            const notif = document.getElementById('pending-patient-requests');
+            if (notif) notif.style.display = 'none';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const sessionData = localStorage.getItem('mc_session');
-            if(!sessionData) {
+            const session = MonacoCare.getSession();
+            if (!session) {
                 window.location.href = 'login.html';
                 return;
             }
-            const session = JSON.parse(sessionData);
-            
-            // Si c'est une famille, envoyer directement sur index.html (ils ne gèrent pas de liste)
-            if(session.role === 'family' || session.role === 'particulier') {
+
+            // Famille → pas de liste de patients, direct vers l'app
+            if (session.role === 'family' || session.role === 'particulier') {
                 window.location.href = 'index.html';
+                return;
             }
 
-            // Afficher le nom
             const nameEl = document.getElementById('pro-name-display');
-            if(nameEl) {
-                nameEl.textContent = (session.displayName || session.proId || 'Professionnel') + ' (' + session.role + ')';
-            }
+            if (nameEl) nameEl.textContent = session.displayName || session.proId || 'Professionnel';
 
             loadPatients();
         });

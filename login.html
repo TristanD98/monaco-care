@@ -697,87 +697,82 @@
                 <i class="fa-solid fa-arrow-left"></i> Retour
             </button>
 
-            <p class="step-title">Accompagnant</p>
-            <p style="font-size:12px; color:rgba(255,255,255,0.7); margin-bottom:20px; line-height:1.5;">Espace réservé aux intervenants non-médicaux (Auxiliaire de vie, livraison...).</p>
+            <p class="step-title">Intervenant / Accompagnant</p>
 
-            <div class="pro-tabs">
-                <button class="pro-tab active" id="tab-helper-login" onclick="switchHelperTab('login')">Connexion</button>
-                <button class="pro-tab" id="tab-helper-register" onclick="switchHelperTab('register')">S'inscrire</button>
+            <div class="form-group">
+                <label class="form-label">Identifiant professionnel</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-id-card"></i>
+                    <input type="text" id="helper-id-input" class="form-input"
+                        placeholder="Ex: PRO-003"
+                        autocomplete="username" autocapitalize="characters">
+                </div>
             </div>
 
-            <!-- Connexion Accompagnant -->
-            <div id="helper-login-form">
-                <div class="form-group">
-                    <label class="form-label">Identifiant d'intervenant</label>
-                    <div class="input-group">
-                        <i class="input-icon fa-solid fa-id-badge"></i>
-                        <input type="text" id="helper-id-input" class="form-input"
-                            placeholder="Ex: PRO-102"
-                            autocomplete="username" autocapitalize="characters">
-                    </div>
+            <div class="form-group">
+                <label class="form-label">Code d'accès</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-lock"></i>
+                    <input type="password" id="helper-pin-input" class="form-input"
+                        placeholder="••••••" autocomplete="current-password">
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">Code d'accès personnel</label>
-                    <div class="input-group">
-                        <i class="input-icon fa-solid fa-lock"></i>
-                        <input type="password" id="helper-pin-input" class="form-input"
-                            placeholder="••••••" autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="checkbox-row">
-                    <input type="checkbox" id="helper-remember-me" checked>
-                    <label for="helper-remember-me">Rester connecté</label>
-                </div>
-
-                <button class="btn-primary" id="btn-helper-login" onclick="loginHelper()">
-                    Se connecter
-                </button>
-
-                <div class="feedback" id="helper-login-feedback"></div>
             </div>
 
-            <!-- Inscription Accompagnant -->
-            <div id="helper-register-form" style="display:none;">
-                <div style="display:flex; gap:10px;">
-                    <div class="form-group" style="flex:1; margin-bottom:12px;">
-                        <label class="form-label">Prénom</label>
-                        <input type="text" id="hreg-firstname" class="form-input" placeholder="Marie">
-                    </div>
-                    <div class="form-group" style="flex:1; margin-bottom:12px;">
-                        <label class="form-label">Nom</label>
-                        <input type="text" id="hreg-lastname" class="form-input" placeholder="DUPONT">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Rôle (Métier)</label>
-                    <div class="input-group">
-                        <i class="input-icon fa-solid fa-briefcase"></i>
-                        <input type="text" id="hreg-profession" class="form-input" placeholder="Ex : Auxiliaire de vie">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Téléphone</label>
-                    <div class="input-group">
-                        <i class="input-icon fa-solid fa-mobile"></i>
-                        <input type="tel" id="hreg-phone" class="form-input" placeholder="06 XX XX XX XX">
-                    </div>
-                </div>
-
-                <div class="checkbox-row" style="margin-top: 16px;">
-                    <input type="checkbox" id="hreg-consent">
-                    <label for="hreg-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
-                </div>
-
-                <button class="btn-primary" id="btn-helper-register" onclick="registerHelper()">
-                    Envoyer la demande
-                </button>
-
-                <div class="feedback" id="helper-register-feedback"></div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="helper-remember-me" checked>
+                <label for="helper-remember-me">Rester connecté sur cet appareil</label>
             </div>
+
+            <button class="btn-primary" id="btn-helper-login" onclick="loginHelper()">
+                Se connecter
+            </button>
+
+            <div class="feedback" id="helper-login-feedback"></div>
+
+            <div class="separator" style="margin: 20px 0;"><span>Pas encore de compte ?</span></div>
+            <button class="btn-primary" style="background: rgba(255,255,255,0.1); color: white; box-shadow: none;" onclick="showStep('helper-register')">
+                Envoyer une demande d'accès
+            </button>
+        </div>
+
+        <!-- STEP 2E: Inscription Accompagnant -->
+        <div id="step-helper-register" style="display:none;">
+            <button class="back-link" onclick="showStep('helper')">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+            <p class="step-title">Demande d'accès</p>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1; margin-bottom:12px;">
+                    <label class="form-label">Prénom</label>
+                    <input type="text" id="hreg-firstname" class="form-input" placeholder="Marie">
+                </div>
+                <div class="form-group" style="flex:1; margin-bottom:12px;">
+                    <label class="form-label">Nom</label>
+                    <input type="text" id="hreg-lastname" class="form-input" placeholder="DUPONT">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rôle (Métier)</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-briefcase"></i>
+                    <input type="text" id="hreg-profession" class="form-input" placeholder="Ex : Auxiliaire de vie">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Téléphone</label>
+                <div class="input-group">
+                    <i class="input-icon fa-solid fa-mobile"></i>
+                    <input type="tel" id="hreg-phone" class="form-input" placeholder="06 XX XX XX XX">
+                </div>
+            </div>
+            <div class="checkbox-row" style="margin-top: 16px;">
+                <input type="checkbox" id="hreg-consent">
+                <label for="hreg-consent" style="font-size: 11px; line-height: 1.4;">J'accepte que mes données professionnelles soient traitées. <a href="#" onclick="openTerms(event)" style="color:white; text-decoration:underline;">Lire les conditions</a>.</label>
+            </div>
+            <button class="btn-primary" id="btn-helper-register" onclick="registerHelper()">
+                Envoyer la demande
+            </button>
+            <div class="feedback" id="helper-register-feedback"></div>
         </div>
 
     </div><!-- /card -->
@@ -812,24 +807,15 @@
     /* ============================================================
        NAVIGATION ENTRE LES ÉTAPES
     ============================================================ */
+    const ALL_STEPS = ['choose','family','pro','family-request','helper','helper-register'];
     function showStep(step) {
-        document.getElementById('step-choose').style.display = 'none';
-        document.getElementById('step-family').style.display = 'none';
-        document.getElementById('step-pro').style.display   = 'none';
-        document.getElementById('step-family-request').style.display = 'none';
-        document.getElementById('step-helper').style.display = 'none';
-
-        if (step === 'choose') document.getElementById('step-choose').style.display = 'block';
-        if (step === 'family') document.getElementById('step-family').style.display = 'block';
-        if (step === 'pro')    document.getElementById('step-pro').style.display    = 'block';
-        if (step === 'family-request') document.getElementById('step-family-request').style.display = 'block';
-        if (step === 'helper') document.getElementById('step-helper').style.display = 'block';
-
-        // Clear feedback
-        document.querySelectorAll('.feedback').forEach(f => {
-            f.className = 'feedback';
-            f.innerHTML = '';
+        ALL_STEPS.forEach(s => {
+            const el = document.getElementById('step-' + s);
+            if (el) el.style.display = 'none';
         });
+        const target = document.getElementById('step-' + step);
+        if (target) target.style.display = 'block';
+        document.querySelectorAll('.feedback').forEach(f => { f.className = 'feedback'; f.innerHTML = ''; });
     }
 
     function switchProTab(tab) {
