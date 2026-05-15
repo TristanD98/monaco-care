@@ -206,14 +206,14 @@ const MonacoCare = (() => {
             const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             const code = Array.from({length:4}, ()=>c[Math.floor(Math.random()*c.length)]).join('') + '-' +
                          Array.from({length:4}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
-            const days  = options.days || 30;
-            
+            const days = parseInt(options.days) || 30;
+
             await db.collection('demo_codes').doc(code).set({
                 active: true,
                 patientId: options.patientId || 'patient-demo',
                 label: options.label || 'Nouveau code',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                expiresAt: new Date(Date.now() + days * 864e5).toISOString()
+                expiresAt: days === 0 ? null : new Date(Date.now() + days * 864e5).toISOString()
             });
             return code;
         },

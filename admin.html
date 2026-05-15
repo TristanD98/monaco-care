@@ -302,11 +302,10 @@
             <div class="content">
                 <div class="stats-grid" id="stats-grid"><!-- JS --></div>
 
-                <div class="alert-box info">
-                    <i class="fa-solid fa-circle-info"></i>
+                <div class="alert-box info" style="background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.25);">
+                    <i class="fa-solid fa-circle-check" style="color:#10B981;"></i>
                     <div>
-                        <strong>Mode démo actif.</strong> Toutes les données sont stockées localement dans votre navigateur.
-                        Pour une utilisation en production avec plusieurs appareils, configurez Firebase dans <code>firebase-config.js</code>.
+                        <strong style="color:#10B981;">Firebase connecté.</strong> Les données sont synchronisées en temps réel sur tous les appareils via Firebase Firestore.
                     </div>
                 </div>
 
@@ -345,6 +344,9 @@
                                     <option value="30" selected>30 jours</option>
                                     <option value="60">60 jours</option>
                                     <option value="90">90 jours</option>
+                                    <option value="180">180 jours</option>
+                                    <option value="365">1 an</option>
+                                    <option value="0">Illimité</option>
                                 </select>
                             </div>
                             <button class="btn btn-primary" onclick="generateCode()">
@@ -521,10 +523,10 @@
     }
 
     /* ── STATS ────────────────────────────────────────────── */
-    function renderStats() {
-        const codes   = MonacoCare.admin.getAllCodes();
-        const pros    = MonacoCare.admin.getAllProfessionals();
-        const pending = MonacoCare.admin.getPendingRegistrations();
+    async function renderStats() {
+        const codes   = await MonacoCare.admin.getAllCodes();
+        const pros    = await MonacoCare.admin.getAllProfessionals();
+        const pending = await MonacoCare.admin.getPendingRegistrations();
         const activeCodes = Object.values(codes).filter(c => c.active).length;
 
         const items = [
@@ -544,14 +546,16 @@
     }
 
     /* ── CODES ────────────────────────────────────────────── */
-    function generateCode() {
+    async function generateCode() {
         const label = document.getElementById('code-label').value.trim() || 'Code famille';
         const days  = parseInt(document.getElementById('code-days').value);
-        const code  = MonacoCare.admin.generateDemoCode({ label, days });
+        const code  = await MonacoCare.admin.generateDemoCode({ label, days });
 
-        const expiry = new Date(Date.now() + days * 864e5);
+        const expiryText = days === 0
+            ? 'Pas d\'expiration (illimité)'
+            : `Expire le ${new Date(Date.now() + days * 864e5).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`;
         document.getElementById('modal-code-display').textContent = code;
-        document.getElementById('modal-code-expiry').textContent  = `Expire le ${expiry.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`;
+        document.getElementById('modal-code-expiry').textContent  = expiryText;
         document.getElementById('code-label').value = '';
         openModal('modal-new-code');
         renderStats();
@@ -568,8 +572,8 @@
         });
     }
 
-    function renderCodes() {
-        const codes = MonacoCare.admin.getAllCodes();
+    async function renderCodes() {
+        const codes = await MonacoCare.admin.getAllCodes();
         const entries = Object.entries(codes).sort((a,b) => new Date(b[1].createdAt||0) - new Date(a[1].createdAt||0));
 
         if (!entries.length) {
@@ -608,14 +612,14 @@
             </table>`;
     }
 
-    function toggleCode(code) {
-        MonacoCare.admin.toggleDemoCode(code);
+    async function toggleCode(code) {
+        await MonacoCare.admin.toggleDemoCode(code);
         renderCodes(); renderStats();
     }
 
-    function deleteCode(code) {
+    async function deleteCode(code) {
         if (confirm(`Supprimer définitivement le code "${code}" ?`)) {
-            MonacoCare.admin.deleteDemoCode(code);
+            await MonacoCare.admin.deleteDemoCode(code);
             renderCodes(); renderStats();
         }
     }
@@ -629,8 +633,8 @@
     }
 
     /* ── PROS ─────────────────────────────────────────────── */
-    function renderPros() {
-        const pros = MonacoCare.admin.getAllProfessionals();
+    async function renderPros() {
+        const pros = await MonacoCare.admin.getAllProfessionals();
         const entries = Object.entries(pros).sort((a,b) => new Date(b[1].createdAt||0) - new Date(a[1].createdAt||0));
 
         if (!entries.length) {
@@ -669,30 +673,30 @@
             </table>`;
     }
 
-    function togglePro(proId) {
-        MonacoCare.admin.toggleProfessional(proId);
+    async function togglePro(proId) {
+        await MonacoCare.admin.toggleProfessional(proId);
         renderPros(); renderStats();
     }
 
-    function resetProPin(proId) {
+    async function resetProPin(proId) {
         if (confirm(`Réinitialiser le code d'accès de ${proId} ?`)) {
-            const newPin = MonacoCare.admin.resetPin(proId);
+            const newPin = await MonacoCare.admin.resetPin(proId);
             document.getElementById('modal-new-pin').textContent = newPin;
             openModal('modal-reset-pin');
         }
     }
 
     /* ── PENDING ──────────────────────────────────────────── */
-    function updatePendingBadge() {
-        const pending = MonacoCare.admin.getPendingRegistrations();
+    async function updatePendingBadge() {
+        const pending = await MonacoCare.admin.getPendingRegistrations();
         const count   = Object.keys(pending).length;
         const badge   = document.getElementById('pending-badge');
         badge.textContent = count;
         badge.style.display = count > 0 ? 'inline-block' : 'none';
     }
 
-    function renderPending() {
-        const pending = MonacoCare.admin.getPendingRegistrations();
+    async function renderPending() {
+        const pending = await MonacoCare.admin.getPendingRegistrations();
         const entries = Object.entries(pending);
 
         if (!entries.length) {
@@ -727,8 +731,8 @@
             </table>`;
     }
 
-    function approvePro(regId) {
-        const result = MonacoCare.admin.approveProfessional(regId);
+    async function approvePro(regId) {
+        const result = await MonacoCare.admin.approveProfessional(regId);
         if (result) {
             document.getElementById('modal-pro-id').textContent   = result.proId;
             document.getElementById('modal-pro-pin').textContent  = result.pin;
@@ -738,18 +742,17 @@
         }
     }
 
-    function rejectPro(regId) {
+    async function rejectPro(regId) {
         if (confirm('Refuser cette demande ?')) {
-            const pending = JSON.parse(localStorage.getItem('mc_pending_registrations') || '{}');
-            if (pending[regId]) { pending[regId].status = 'rejected'; localStorage.setItem('mc_pending_registrations', JSON.stringify(pending)); }
+            await db.collection('pending_registrations').doc(regId).update({ status: 'rejected' });
             renderPending(); updatePendingBadge(); renderStats();
         }
     }
 
     /* ── PATIENTS ─────────────────────────────────────────── */
-    function renderPatients() {
-        const patients = MonacoCare.admin.getAllPatients();
-        const pros = MonacoCare.admin.getAllProfessionals();
+    async function renderPatients() {
+        const patients = await MonacoCare.admin.getAllPatients();
+        const pros = await MonacoCare.admin.getAllProfessionals();
         const entries = Object.entries(patients);
 
         if (!entries.length) {
