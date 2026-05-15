@@ -503,7 +503,24 @@
     });
 
     /* ── INIT ─────────────────────────────────────────────── */
-    function initApp() {
+    async function initApp() {
+        try {
+            // Test rapide de connectivité Firestore
+            await db.collection('demo_codes').limit(1).get();
+        } catch(e) {
+            // Firestore inaccessible → probablement règles expirées
+            const grid = document.getElementById('stats-grid');
+            if (grid) grid.innerHTML = `
+                <div style="grid-column:1/-1; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
+                    border-radius:12px; padding:16px 20px; color:#FCA5A5; font-size:13px; line-height:1.6;">
+                    <strong style="color:#FCA5A5;">⚠️ Firestore inaccessible.</strong><br>
+                    Les règles de sécurité Firebase sont probablement expirées (mode test = 30 jours).<br>
+                    <strong>Solution :</strong> Ouvrir la <a href="https://console.firebase.google.com/project/monaco-care/firestore/rules"
+                    target="_blank" style="color:white;">Console Firebase → Firestore → Règles</a>
+                    et republier les règles en mode test.
+                </div>`;
+            return;
+        }
         renderStats();
         renderCodes();
         updatePendingBadge();
