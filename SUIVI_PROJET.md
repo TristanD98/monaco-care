@@ -48,3 +48,35 @@
   4. **Cache busting :** `app.js?v=3` pour forcer le rechargement du script chez les utilisateurs.
 - **Commit :** `bc18391` — Déployé sur GitHub → Vercel.
 
+### 14 Mai 2026 à 00:30 — Centralisation & Stabilisation (Sprint Actuel)
+- **Centralisation des développements (Compilation de nos différentes fenêtres de discussion) :**
+  1. **Personnalisation UI & Améliorations :** Ajout de la couleur rouge pour le nom du bénéficiaire, mise en place d'un filtre pour le flux de messages, et création de la modale des paramètres (gestion des patients, pros et abonnements).
+  2. **Débogage du Chat :** Correction des problèmes empêchant de démarrer de nouvelles discussions.
+  3. **Outils Avancés :** Installation réussie des "Stitch Agent Skills" (outils MCP) pour étendre les capacités de développement.
+  4. **Stabilité de l'Infrastructure :**
+     - Déblocage et nettoyage des processus fantômes de Docker Desktop.
+     - Mise à jour d'urgence des règles de sécurité de Firebase Firestore pour rétablir les requêtes clients en mode test.
+- **Décision Importante :** Le renommage complet du projet et des dossiers de "Monaco Care" vers "Monacare" est reporté à plus tard afin de ne pas casser les liaisons actuelles avec Firebase et Vercel.
+
+### 16 Mai 2026 à 18:30 — Refonte navigation multi-rôles & unification patient Charles LECLERC
+- **Ce que l'on cherchait à accomplir :**
+  - Supprimer définitivement Jean-Pierre DUBOIS (patient fictif de test) et n'avoir qu'un seul patient de démo : **Charles LECLERC** (ID `patient-demo` conservé pour ne pas perdre l'historique des messages/constantes)
+  - Faire passer la **Famille par la page de sélection patient** (comme les Pros et Intervenants) au lieu d'atterrir directement sur le flux
+  - Restaurer l'historique des messages (les anciens posts étaient stockés sous `patient-demo` → Charles Leclerc hérite de tout l'historique automatiquement)
+- **Comment on a fait :**
+  1. `firebase-config.js` : seed renomme `patient-demo` en Charles LECLERC, supprime `patient-leclerc` en double
+  2. `login.html` : connexion Famille → `patients.html` (plus `index.html` directement), session sans `patientId` présélectionné
+  3. `patients.html` : Famille filtrée par `assignedFamilyCodes`, Jean-Pierre supprimé, redirection famille supprimée
+  4. `index.html` : si session sans `patientId` → redirection automatique vers `patients.html`
+  5. Labels corrigés partout : `patient-demo` = Charles LECLERC
+- **Règle de suivi ajoutée :** Toute modification doit être consignée ici avec date + heure.
+
+### 14 Mai 2026 à 00:57 — HOTFIX : Interface complètement bloquée (Boutons, Coffre, Menu)
+- **Le problème signalé :**
+  Tous les éléments interactifs de l'application (les boutons d'action rapide, le bouton "Déverrouiller" du coffre médical et le menu à trois points) ne réagissaient plus au clic, donnant l'impression que l'interface était gelée, bien que la page s'affichait.
+- **La cause racine identifiée :**
+  Lors de l'initialisation du DOM (`DOMContentLoaded`), la fonction `updateRoleUI` tentait d'appeler `loadRealtimeFeed` pour afficher le flux de messages. Or, cette dernière faisait référence à la variable `fluxListener` qui n'était déclarée (avec le mot-clé `let`) que beaucoup plus bas dans le script. En JavaScript, cela déclenchait une "Temporal Dead Zone" (ReferenceError), provoquant le crash immédiat de la suite du script de démarrage (`app.js`). Tous les événements (clics) programmés *après* cette ligne n'étaient jamais activés.
+- **Ce qu'on a corrigé :**
+  Déplacement des déclarations `let fluxListener = null;` et `let currentChatListener = null;` au tout début du fichier `app.js` (dans les variables globales), rendant ces références accessibles instantanément à toutes les fonctions d'initialisation.
+- **Résultat :**
+  Le crash silencieux est réparé. L'interface, les événements tactiles, le coffre et les menus s'initialisent correctement. Déployé sur GitHub et Vercel.

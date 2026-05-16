@@ -322,11 +322,9 @@
 </div>
 
 <script>
-    // ── Patients démo toujours présents (base sûre) ──────────────
+    // ── Patient démo de référence ─────────────────────────────────
     const DEMO_PATIENTS = [
-        { patientId: 'patient-demo',    name: 'Jean-Pierre DUBOIS', age: 78, address: '12 Avenue de la Costa, Monaco' },
-        { patientId: 'patient-demo',    name: 'Charles LECLERC',    age: 27, address: 'Monaco',
-          _displayId: 'patient-leclerc' }   // label visuel distinct, data partagée
+        { patientId: 'patient-demo', name: 'Charles LECLERC', age: 27, address: 'Monaco' }
     ];
 
     let allPatients = [];
@@ -383,31 +381,40 @@
     async function loadPatients() {
         try {
             const session = MonacoCare.getSession();
-            const proId = session?.proId || null;
+            const proId    = session?.proId    || null;
+            const demoCode = session?.demoCode || null;
+            const role     = session?.role     || null;
 
-            // Base : les deux patients démo sont TOUJOURS présents
+            // Base sûre : patient(s) démo
             let patients = [...DEMO_PATIENTS];
 
-            // Enrichir avec Firestore (sans bloquer si ça échoue)
             try {
                 let snap;
                 if (proId) {
+                    // Pro / Intervenant → patients assignés à cet identifiant
                     snap = await db.collection('patients')
                         .where('assignedPros', 'array-contains', proId)
+                        .get();
+                } else if (demoCode) {
+                    // Famille → patients accessibles avec ce code
+                    snap = await db.collection('patients')
+                        .where('assignedFamilyCodes', 'array-contains', demoCode)
                         .get();
                 } else {
                     snap = await db.collection('patients').get();
                 }
 
-                if (!snap.empty) {
-                    const firestoreIds = new Set(snap.docs.map(d => d.id));
-                    // Ajouter les patients Firestore qui ne sont pas déjà dans la liste démo
+                if (snap && !snap.empty) {
+                    // Remplacer la liste démo par les données Firestore réelles
                     const DEMO_IDS = new Set(DEMO_PATIENTS.map(p => p.patientId));
-                    snap.docs.forEach(doc => {
-                        if (!DEMO_IDS.has(doc.id)) {
-                            patients.push(doc.data());
-                        }
-                    });
+                    const firestorePatients = snap.docs.map(d => d.data());
+
+                    // Mettre à jour les patients démo avec les données Firestore, ajouter les autres
+                    patients = firestorePatients;
+
+                    // S'assurer que Charles LECLERC apparaît toujours même si Firestore le rate
+                    const hasDemo = firestorePatients.some(p => p.patientId === 'patient-demo');
+                    if (!hasDemo) patients = [...DEMO_PATIENTS, ...firestorePatients];
                 }
             } catch(firestoreErr) {
                 console.warn('Firestore unavailable, using demo list:', firestoreErr);
@@ -431,16 +438,14 @@
         const session = MonacoCare.getSession();
         if (!session) { window.location.href = 'login.html'; return; }
 
-        // Famille → direct vers l'app
-        if (session.role === 'family' || session.role === 'particulier') {
-            window.location.href = 'index.html'; return;
-        }
+        // Tous les rôles passent par la sélection patient
 
         const nameEl = document.getElementById('pro-name-display');
         if (nameEl) {
-            const n = session.displayName || session.proId || 'Professionnel';
-            // Afficher juste le prénom si le nom contient " — "
-            nameEl.textContent = n.includes(' — ') ? n.split(' — ')[0] : n;
+            let n = session.displayName || session.proId || 'Professionnel';
+            if (session.role === 'family') n = 'Accès Famille';
+            else if (n.includes(' — ')) n = n.split(' — ')[0];
+            nameEl.textContent = n;
         }
 
         loadPatients();

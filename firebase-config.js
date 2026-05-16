@@ -345,15 +345,9 @@ const MonacoCare = (() => {
             DEMO_PROS_FULL.forEach(({ id, ...data }) => {
                 batch.set(db.collection('professionals').doc(id), data, { merge: true });
             });
-            // Toujours s'assurer que les patients démo existent
+            // Patient unique de démo : Charles LECLERC
             batch.set(db.collection('patients').doc('patient-demo'), {
-                name: 'Jean-Pierre DUBOIS', patientId: 'patient-demo', firstName: 'Jean-Pierre',
-                lastName: 'DUBOIS', dateOfBirth: '1947-03-12', address: '12 Avenue de la Costa, Monaco',
-                age: 78, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003', 'INT-001', 'INT-002'],
-                assignedFamilyCodes: ['DEMO-2026', 'FAM-001', 'FAM-002']
-            }, { merge: true });
-            batch.set(db.collection('patients').doc('patient-leclerc'), {
-                name: 'Charles LECLERC', patientId: 'patient-leclerc', firstName: 'Charles',
+                name: 'Charles LECLERC', patientId: 'patient-demo', firstName: 'Charles',
                 lastName: 'LECLERC', dateOfBirth: '1997-10-16', address: 'Monaco',
                 age: 27, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003', 'INT-001', 'INT-002'],
                 assignedFamilyCodes: ['DEMO-2026', 'FAM-001', 'FAM-002']

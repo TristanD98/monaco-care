@@ -417,8 +417,7 @@
 
             // Noms hardcodés pour les patients démo (fallback immédiat, avant Firestore)
             const PATIENT_LABELS = {
-                'patient-demo':    { name: 'Jean-Pierre DUBOIS', info: '78 ans · Monaco' },
-                'patient-leclerc': { name: 'Charles LECLERC',    info: '27 ans · Monaco' },
+                'patient-demo': { name: 'Charles LECLERC', info: '27 ans · Monaco' },
             };
             const fallback = PATIENT_LABELS[patientId];
             if (patientNameEl) patientNameEl.textContent = session.patientName || (fallback ? fallback.name : patientId);
@@ -439,12 +438,10 @@
                 settingsBtn.style.display = 'none';
             }
 
-            // Garantir que patientId est toujours présent dans la session
-            // (le login PRO ne le stocke pas toujours, ce qui brise le flux)
+            // Si pas de patientId (famille/pro sans sélection préalable) → rediriger vers sélection
             if (!session.patientId) {
-                const updatedSession = { ...session, patientId: 'patient-demo', label: 'Charles Leclerc' };
-                try { localStorage.setItem('mc_session', JSON.stringify(updatedSession)); } catch(e) {}
-                try { sessionStorage.setItem('mc_session', JSON.stringify(updatedSession)); } catch(e) {}
+                window.location.href = 'patients.html';
+                return;
             }
 
             // Synchroniser le role-select avec le rôle de session

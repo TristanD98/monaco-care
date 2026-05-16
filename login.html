@@ -903,11 +903,10 @@
             const result = await MonacoCare.validateDemoCode(code);
 
             if (result.valid) {
-                // Stocker la session
+                // Stocker la session SANS patientId — sélection via patients.html
                 MonacoCare.setSession({
                     role: 'family',
                     displayName: 'Famille',
-                    patientId: result.patientId || 'patient-demo',
                     demoCode: code,
                     expiresAt: result.expiresAt
                 });
@@ -915,7 +914,7 @@
                 showFeedback('family-feedback', 'success', '<i class="fa-solid fa-check-circle"></i> Code valide ! Redirection en cours...');
 
                 setTimeout(() => {
-                    window.location.href = 'index.html?role=family';
+                    window.location.href = 'patients.html';
                 }, 1200);
 
             } else {
