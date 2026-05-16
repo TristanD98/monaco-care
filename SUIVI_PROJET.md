@@ -5,6 +5,15 @@
 > **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
 ---
 
+### 16 Mai 2026 à 22:00 — HOTFIX : Intervenants absents Firestore + PIN incohérent
+- **Problèmes :**
+  1. INT-001 (Leïla) et INT-002 (Max) absents de la collection `professionals` dans Firestore → connexion impossible
+  2. Le seed Firestore utilisait PIN `1234` pour les pros, le dictionnaire local utilisait `CARE2026` → incohérence
+- **Corrections (`firebase-config.js`) :**
+  1. INT-001 et INT-002 ajoutés dans `DEMO_PROS_FULL` avec `professionLabel`, `specialty: 'helper'`, `pin: 'CARE2026'`
+  2. Tous les PINs du seed unifiés à `CARE2026`
+- **PIN unique pour tous les comptes : `CARE2026`**
+
 ### 16 Mai 2026 à 21:30 — INCIDENT : Firestore règles expirées — tout le flux bloqué
 - **Symptômes signalés :**
   - "Impossible de charger le flux" sur l'écran d'accueil

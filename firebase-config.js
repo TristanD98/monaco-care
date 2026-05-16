@@ -333,14 +333,20 @@ const MonacoCare = (() => {
             const batch = db.batch();
             const DEMO_PROS_FULL = [
                 { id: 'PRO-001', name: 'Tristan', firstName: 'Tristan', lastName: '', specialty: 'kine',
-                  professionLabel: 'Kinésithérapeute', email: 'pro-001@monacocare.mc', pin: '1234',
+                  professionLabel: 'Kinésithérapeute', email: 'pro-001@monacocare.mc', pin: 'CARE2026',
                   status: 'active', color: '#7B1535', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
                 { id: 'PRO-002', name: 'Dr. Sarah Martin', firstName: 'Sarah', lastName: 'Martin', specialty: 'medecin',
-                  professionLabel: 'Médecin généraliste', email: 'pro-002@monacocare.mc', pin: '1234',
+                  professionLabel: 'Médecin généraliste', email: 'pro-002@monacocare.mc', pin: 'CARE2026',
                   status: 'active', color: '#315141', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
                 { id: 'PRO-003', name: 'Sophie Laurent', firstName: 'Sophie', lastName: 'Laurent', specialty: 'auxiliaire',
-                  professionLabel: 'Auxiliaire de vie', email: 'pro-003@monacocare.mc', pin: '1234',
+                  professionLabel: 'Auxiliaire de vie', email: 'pro-003@monacocare.mc', pin: 'CARE2026',
                   status: 'active', color: '#3B82F6', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+                { id: 'INT-001', name: 'Leïla', firstName: 'Leïla', lastName: '', specialty: 'helper',
+                  professionLabel: 'Femme de ménage', email: 'int-001@monacocare.mc', pin: 'CARE2026',
+                  status: 'active', color: '#6366F1', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+                { id: 'INT-002', name: 'Max', firstName: 'Max', lastName: '', specialty: 'helper',
+                  professionLabel: 'Auxiliaire de vie', email: 'int-002@monacocare.mc', pin: 'CARE2026',
+                  status: 'active', color: '#0EA5E9', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
             ];
             DEMO_PROS_FULL.forEach(({ id, ...data }) => {
                 batch.set(db.collection('professionals').doc(id), data, { merge: true });
