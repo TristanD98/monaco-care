@@ -5,6 +5,23 @@
 > **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
 ---
 
+### 16 Mai 2026 à 19:40 — 3 collections Firestore distinctes + permissions coffre par rôle
+- **Modifications :**
+  1. `demo_codes` renommé en `family_codes` dans tous les fichiers (`firebase-config.js`, `app.js`, `admin.html`)
+  2. Seed : `batch.delete(professionals/INT-001)` et `batch.delete(professionals/INT-002)` → nettoyage de la migration précédente
+  3. `index.html` : `helper` ajouté dans la map session→roleSelect (mappé sur `auxiliaire`) — corrige bug silencieux qui donnait aux intervenants un accès Pro complet
+  4. `app.js` : coffre pour `helper` (intervenant) → pas de bouton biométrique, texte "Entrez votre code d'accès ci-dessous"
+  5. `app.js` : coffre pour `family` → Face ID fonctionne mais notes cliniques masquées (vitaux + douleur uniquement)
+  6. `admin.html` : PIN seed corrigé `1234` → `CARE2026`, patient corrigé Jean-Pierre → Charles LECLERC
+- **Résumé des permissions coffre :**
+  - Professionnel de santé : accès complet (Face ID → tout visible dont notes cliniques)
+  - Famille : accès via Face ID → vitaux + douleur visibles, notes cliniques masquées
+  - Intervenant : pas de Face ID, code externe MC-XXXX requis → vitaux + douleur, notes cliniques masquées
+- **Collections Firestore (état final) :**
+  - `professionals` : PRO-001, 002, 003 uniquement
+  - `intervenants` : INT-001 (Leïla), INT-002 (Max)
+  - `family_codes` : codes d'accès Famille (ex-`demo_codes`)
+
 ### 16 Mai 2026 à 19:18 — Séparation collections Firestore : professionals / intervenants / famille
 - **Objectif :** Créer trois collections distinctes dans Firestore, une par type d'utilisateur.
 - **Modifications (`firebase-config.js`) :**
