@@ -9,9 +9,9 @@ Connexion via l'onglet **"Professionnel de santé"** sur login.html
 
 | Identifiant | Code PIN | Nom              | Rôle                  | Droits                                      |
 |-------------|----------|------------------|-----------------------|---------------------------------------------|
-| PRO-001     | 1234     | Tristan          | Kinésithérapeute      | Flux complet, Coffre médical, Notes cliniques |
-| PRO-002     | 1234     | Dr. Sarah Martin | Médecin généraliste   | Flux complet, Coffre médical, Notes cliniques |
-| PRO-003     | 1234     | Sophie Laurent   | Auxiliaire de vie     | Flux public & médifam uniquement, pas de coffre |
+| PRO-001     | CARE2026 | Tristan          | Kinésithérapeute      | Flux complet, Coffre médical, Notes cliniques |
+| PRO-002     | CARE2026 | Dr. Sarah Martin | Médecin généraliste   | Flux complet, Coffre médical, Notes cliniques |
+| PRO-003     | CARE2026 | Sophie Laurent   | Auxiliaire de vie     | Flux public & médifam uniquement, pas de coffre |
 
 ---
 
@@ -20,8 +20,8 @@ Connexion via l'onglet **"Intervenant"** sur login.html
 
 | Identifiant | Code PIN | Nom   | Rôle            | Droits                                      |
 |-------------|----------|-------|-----------------|---------------------------------------------|
-| INT-001     | 1234     | Leïla | Femme de ménage | Flux public & médifam, pas de coffre médical |
-| INT-002     | 1234     | Max   | Auxiliaire de vie | Flux public & médifam, pas de coffre médical |
+| INT-001     | CARE2026 | Leïla | Femme de ménage   | Flux public & médifam, pas de coffre médical |
+| INT-002     | CARE2026 | Max   | Auxiliaire de vie | Flux public & médifam, pas de coffre médical |
 
 ---
 

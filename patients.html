@@ -154,12 +154,10 @@
 
                 // Fallback si Firestore vide
                 if (!patients.length) {
-                    patients = [{
-                        patientId: 'patient-demo',
-                        name: 'Jean-Pierre DUBOIS',
-                        age: 78,
-                        address: '12 Avenue de la Costa, Monaco'
-                    }];
+                    patients = [
+                        { patientId: 'patient-demo', name: 'Jean-Pierre DUBOIS', age: 78, address: '12 Avenue de la Costa, Monaco' },
+                        { patientId: 'patient-leclerc', name: 'Charles LECLERC', age: 27, address: 'Monaco' }
+                    ];
                 }
 
                 list.innerHTML = patients.map(patientCard).join('');

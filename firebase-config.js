@@ -98,11 +98,11 @@ const MonacoCare = (() => {
     async function loginProfessional(proId, pin, remember) {
         // ── MODE DÉMO LOCAL ──
         const DEMO_PROS = {
-            'PRO-001': { pin: '1234', name: 'Tristan — Kinésithérapeute', specialty: 'Kinésithérapeute' },
-            'PRO-002': { pin: '1234', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
-            'PRO-003': { pin: '1234', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
-            'INT-001': { pin: '1234', name: 'Leïla', specialty: 'helper' },
-            'INT-002': { pin: '1234', name: 'Max', specialty: 'helper' },
+            'PRO-001': { pin: 'CARE2026', name: 'Tristan — Kinésithérapeute', specialty: 'Kinésithérapeute' },
+            'PRO-002': { pin: 'CARE2026', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
+            'PRO-003': { pin: 'CARE2026', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
+            'INT-001': { pin: 'CARE2026', name: 'Leïla', specialty: 'helper' },
+            'INT-002': { pin: 'CARE2026', name: 'Max', specialty: 'helper' },
         };
         const proUpper = proId.toUpperCase().trim();
         if (DEMO_PROS[proUpper] && pin === DEMO_PROS[proUpper].pin) {
@@ -400,8 +400,8 @@ const MonacoCare = (() => {
         try { localStorage.setItem('mc_session', str); } catch(e) {}
         try { sessionStorage.setItem('mc_session', str); } catch(e) {}
 
-        // Recharger la page avec un chemin propre (sans query params)
-        window.location.replace(window.location.pathname);
+        // Rediriger vers l'app principale
+        window.location.replace('index.html');
     }
 
     return { validateDemoCode, loginProfessional, registerProfessional, loginHelper, registerHelper, requestFamilyAccess, setSession, getSession, clearSession, requireAuth, switchPatient, admin, seedDatabaseIfEmpty };

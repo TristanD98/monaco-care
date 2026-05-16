@@ -410,15 +410,28 @@
                 info.textContent = `Connecté(e) en tant que : ${name} — ${role}`;
             }
 
-            // Mettre à jour le header patient si disponible
+            // Mettre à jour le header patient
             const patientNameEl = document.getElementById('patient-name');
             const patientInfoEl = document.getElementById('patient-info');
-            if (session.patientName && patientNameEl) {
-                patientNameEl.textContent = session.patientName;
-            }
-            if (session.patientInfo && patientInfoEl) {
-                patientInfoEl.textContent = session.patientInfo;
-            }
+            const patientId = session.patientId || 'patient-demo';
+
+            // Noms hardcodés pour les patients démo (fallback immédiat, avant Firestore)
+            const PATIENT_LABELS = {
+                'patient-demo':    { name: 'Jean-Pierre DUBOIS', info: '78 ans · Monaco' },
+                'patient-leclerc': { name: 'Charles LECLERC',    info: '27 ans · Monaco' },
+            };
+            const fallback = PATIENT_LABELS[patientId];
+            if (patientNameEl) patientNameEl.textContent = session.patientName || (fallback ? fallback.name : patientId);
+            if (patientInfoEl) patientInfoEl.textContent = session.patientInfo  || (fallback ? fallback.info : '');
+
+            // Charger depuis Firestore pour avoir les données à jour
+            db.collection('patients').doc(patientId).get().then(doc => {
+                if (doc.exists) {
+                    const d = doc.data();
+                    if (patientNameEl) patientNameEl.textContent = d.name || d.firstName + ' ' + d.lastName;
+                    if (patientInfoEl) patientInfoEl.textContent = [d.age ? d.age + ' ans' : '', d.address || ''].filter(Boolean).join(' · ');
+                }
+            }).catch(() => {});
 
             // Masquer le bouton de paramètres pour les professionnels
             const settingsBtn = document.getElementById('settings-btn');
