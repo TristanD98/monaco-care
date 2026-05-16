@@ -58,6 +58,16 @@
      - Mise à jour d'urgence des règles de sécurité de Firebase Firestore pour rétablir les requêtes clients en mode test.
 - **Décision Importante :** Le renommage complet du projet et des dossiers de "Monaco Care" vers "Monacare" est reporté à plus tard afin de ne pas casser les liaisons actuelles avec Firebase et Vercel.
 
+### 16 Mai 2026 à 20:15 — HOTFIX : Firestore incohérent — doublon patient, notes cliniques bloquées
+- **Problèmes identifiés via captures Firestore :**
+  1. `patient-leclerc` existait encore dans Firestore → la requête retournait deux patients, et cliquer sur "Charles LECLERC" pointait vers un dossier vide (toutes les données étaient sous `patient-demo`)
+  2. `patient-demo` avait encore les données de Jean-Pierre DUBOIS (seed précédent en `merge:true` n'écrasait pas les vieux champs)
+  3. Notes cliniques : la requête `orderBy('createdAt', 'desc')` exigeait un index composite Firestore inexistant → erreur silencieuse
+- **Corrections :**
+  1. `firebase-config.js` : `batch.delete(patient-leclerc)` + remplacement complet de `patient-demo` sans `merge` (force l'écrasement)
+  2. `app.js` : tri des notes cliniques en JS après le snapshot, suppression du `orderBy` Firestore
+  3. `patients.html` : filtre `patient-leclerc` des résultats pour éviter l'affichage du doublon pendant la transition
+
 ### 16 Mai 2026 à 18:30 — Refonte navigation multi-rôles & unification patient Charles LECLERC
 - **Ce que l'on cherchait à accomplir :**
   - Supprimer définitivement Jean-Pierre DUBOIS (patient fictif de test) et n'avoir qu'un seul patient de démo : **Charles LECLERC** (ID `patient-demo` conservé pour ne pas perdre l'historique des messages/constantes)
