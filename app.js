@@ -830,16 +830,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const fluxFeed = document.getElementById('flux-feed');
         if(fluxListener) fluxListener();
 
+        // Pas de orderBy → pas d'index composite requis, tri en JS après réception
         fluxListener = db.collection('posts')
             .where('patientId', '==', patientId)
-            .orderBy('createdAt', 'desc')
             .onSnapshot(snapshot => {
                 // Ignorer les écritures locales en attente (bug serverTimestamp)
                 if (snapshot.metadata.hasPendingWrites) return;
 
-                // Reconstruire tout le flux à chaque mise à jour
-                // La requête orderBy('createdAt','desc') donne les docs du plus récent au plus ancien.
-                // On les ajoute avec appendChild → le plus récent finit en 1ère position (haut).
                 fluxFeed.innerHTML = '';
 
                 if (snapshot.empty) {
@@ -853,9 +850,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                snapshot.docs.forEach(doc => {
+                // Trier du plus récent au plus ancien en JS
+                const sorted = snapshot.docs.slice().sort((a, b) => {
+                    const ta = a.data().createdAt?.seconds || 0;
+                    const tb = b.data().createdAt?.seconds || 0;
+                    return tb - ta;
+                });
+
+                sorted.forEach(doc => {
                     renderRealtimePost(doc, fluxFeed, false);
                 });
+            }, err => {
+                console.error('loadRealtimeFeed error:', err);
+                fluxFeed.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="display:block; font-size:24px; margin-bottom:8px; color:#F59E0B;"></i>
+                    Impossible de charger le flux.
+                </div>`;
             });
     }
 
@@ -946,30 +956,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* --- FIREBASE: ÉCRITURE AU FLUX --- */
     async function publishToFeed(actionText, imageUrl) {
-        const role = roleSelect.value;
-        const roleName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
-        const titleJob = roleSelect.options[roleSelect.selectedIndex].text.split('(')[1]?.replace(')','') || role;
-
         const isUrgent = actionText.startsWith('⚠️ URGENT');
-
-        // Utiliser la visibilité choisie par l'utilisateur via les chips
-        // Sauf si le message est urgent (prioritaire)
         let visibility = isUrgent ? 'urgent' : selectedVisibility;
 
-        const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+        const session = MonacoCare.getSession();
+        const patientId = session?.patientId || 'patient-demo';
+
+        // Utiliser les données de session si disponibles (session réelle),
+        // sinon fallback sur le roleSelect (mode démo sans session)
+        let authorName, authorRole;
+        if (session && session.displayName) {
+            authorName = session.displayName.includes(' — ')
+                ? session.displayName.split(' — ')[0]
+                : session.displayName;
+            const roleLabels = {
+                'family': 'Famille', 'medecin': 'Médecin', 'kine': 'Kinésithérapeute',
+                'auxiliaire': 'Auxiliaire de vie', 'helper': 'Intervenant', 'pro': 'Professionnel'
+            };
+            authorRole = roleLabels[session.role] || session.role || 'Utilisateur';
+        } else {
+            authorName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+            authorRole = roleSelect.options[roleSelect.selectedIndex].text.split('(')[1]?.replace(')','') || roleSelect.value;
+        }
 
         try {
             await db.collection('posts').add({
-                patientId: patientId,
-                authorName: roleName,
-                authorRole: titleJob,
+                patientId,
+                authorName,
+                authorRole,
                 text: actionText,
-                visibility: visibility,
-                isUrgent: isUrgent,
+                visibility,
+                isUrgent,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 imageUrl: imageUrl || null
             });
-            // Pas besoin d'ajouter manuellement au DOM, le listener s'en charge !
         } catch(e) {
             console.error("Erreur publication: ", e);
             alert("Erreur réseau: impossible de poster pour le moment.");
