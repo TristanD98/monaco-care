@@ -4,143 +4,392 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monaco Care - Mes Patients</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=2">
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 420px;
+            background: #f0f4f8;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+            min-height: 100vh;
+            max-height: 860px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header gradient */
+        .header {
+            background: linear-gradient(135deg, #7B1535, #590021);
+            padding: 52px 24px 28px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .header-greeting {
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .header-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .logout-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .header-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-chip {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-chip i { color: rgba(255,255,255,0.7); font-size: 12px; }
+        .stat-chip span { color: white; font-size: 12px; font-weight: 600; }
+
+        /* Search bar */
+        .search-wrapper {
+            padding: 0 20px;
+            margin-top: -20px;
+            flex-shrink: 0;
+            z-index: 10;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            border-radius: 14px;
+            padding: 13px 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .search-bar i { color: #9CA3AF; font-size: 14px; }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: #1A1A2E;
+            flex: 1;
+            background: transparent;
+        }
+
+        .search-bar input::placeholder { color: #9CA3AF; }
+
+        /* Content */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+            margin-bottom: 2px;
+        }
+
+        /* Patient card */
+        .patient-card {
+            background: white;
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            border: 1.5px solid #F1F5F9;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .patient-card:hover {
+            box-shadow: 0 8px 24px rgba(123,21,53,0.12);
+            border-color: rgba(123,21,53,0.2);
+            transform: translateY(-1px);
+        }
+
+        .patient-card:active { transform: translateY(0); }
+
+        .avatar-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #7B1535, #CE1126);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .patient-info { flex: 1; min-width: 0; }
+
+        .patient-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1A1A2E;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 3px;
+        }
+
+        .patient-meta {
+            font-size: 12px;
+            color: #6B7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .patient-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(123,21,53,0.08);
+            color: #7B1535;
+            white-space: nowrap;
+        }
+
+        .card-arrow {
+            color: #D1D5DB;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        /* Add button */
+        .add-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1.5px dashed #D1D5DB;
+            background: white;
+            color: #6B7280;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+
+        .add-btn:hover {
+            border-color: #7B1535;
+            color: #7B1535;
+            background: rgba(123,21,53,0.03);
+        }
+
+        /* Spinner */
+        .spinner-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #9CA3AF;
+            font-size: 24px;
+        }
+
+        /* Bottom home indicator */
+        .home-indicator {
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .home-indicator::after {
+            content: '';
+            width: 120px;
+            height: 4px;
+            background: #1A1A2E;
+            border-radius: 2px;
+            opacity: 0.15;
+        }
+    </style>
 </head>
 <body>
-    <div class="demo-wrapper">
-        <div class="phone">
-            <div class="notch"></div>
-            <div class="app-container" style="background-color: var(--off-white);">
-                
-                <header class="patient-header" style="justify-content: space-between; align-items: center; padding-bottom: 20px;">
-                    <div>
-                        <h2 style="font-size: 20px; font-weight: 700;">Mes Patients</h2>
-                        <p id="pro-name-display" style="font-size: 13px; opacity: 0.8;">Chargement...</p>
-                    </div>
-                    <button class="icon-btn" onclick="logout()" style="color: white; font-size: 18px;"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
-                </header>
+<div class="phone-shell">
 
-                <div style="padding: 20px; flex: 1; overflow-y: auto;">
-                    <div id="pending-patient-requests" style="display:none; flex-direction:column; gap:10px; margin-bottom:20px;">
-                        <h3 style="font-size:14px; font-weight:600; color:var(--monaco-red);"><i class="fa-solid fa-bell"></i> Nouveaux Patients en attente</h3>
-                        <div style="background:var(--silver-light); border: 1px solid var(--monaco-red); border-radius:12px; padding:15px; display:flex; flex-direction:column; gap:10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <div style="flex:1;">
-                                    <h4 style="font-size:14px; margin-bottom:2px; color:#1A1A2E;">Martine DUBOIS</h4>
-                                    <p style="font-size:12px; color:#6B7280;">Demande d'accès envoyée par la Famille</p>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:10px;">
-                                <button class="modal-btn cancel" onclick="this.parentElement.parentElement.style.display='none'" style="margin:0; padding:8px; font-size:12px; flex:1;">Refuser</button>
-                                <button class="modal-btn" onclick="this.parentElement.parentElement.style.display='none'; alert('Patient ajouté à votre liste.')" style="margin:0; padding:8px; font-size:12px; flex:1;">Accepter</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="patients-list" style="display:flex; flex-direction:column; gap:15px;">
-                        <!-- Les patients seront injectés ici par le JS -->
-                    </div>
-
-                    <button class="modal-btn" onclick="document.getElementById('modal-add-patient').classList.remove('hidden')" style="margin-top: 25px; border-radius:12px; font-weight:600; font-size:14px; background:white; color:var(--monaco-red); border:1px solid #dcc0c3; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
-                        <i class="fa-solid fa-plus" style="margin-right:8px;"></i> Ajouter un patient
-                    </button>
-                </div>
-
-                <div class="home-indicator"></div>
+    <div class="header">
+        <div class="header-top">
+            <div>
+                <p class="header-greeting">Bonjour,</p>
+                <h1 class="header-name" id="pro-name-display">…</h1>
             </div>
-            
-            <!-- MODAL ADD PATIENT / INVITATION -->
-            <div id="modal-add-patient" class="modal hidden" style="z-index: 2000;">
-                <div class="modal-content" style="height: 90%; max-height: 90%; display: flex; flex-direction: column;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-shrink: 0;">
-                        <h3 style="margin:0;">Ajouter un patient</h3>
-                        <button class="icon-btn" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="padding:0; font-size:16px; color:var(--text-dark); background:transparent;"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    
-                    <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
-                        <p style="font-size:12px; color:var(--text-muted); text-align:left; margin-bottom:20px; line-height:1.5;">Saisissez le N° d'identification unique du bénéficiaire. Une demande d'accès sera envoyée à son aidant principal (Famille).</p>
-                        
-                        <div style="padding: 15px; border: 1px solid var(--silver-dark); border-radius: 12px; margin-bottom: 15px; background:var(--silver-light); text-align:left;">
-                            <h4 style="font-size:13px; margin-bottom:8px;"><i class="fa-solid fa-hashtag" style="color:var(--monaco-red);"></i> Code du bénéficiaire</h4>
-                            <input type="text" id="invitation-code" placeholder="Ex: MC-89240" style="width:100%; padding: 12px; border: 1px solid var(--silver-dark); border-radius: 8px; font-size: 13px; margin-bottom:12px;">
-                            <button class="modal-btn" onclick="acceptInvitation()" style="margin:0; padding:10px; font-size:13px; margin-bottom:15px;">Envoyer la demande d'accès</button>
-                        </div>
-
-                        <!-- Bouton Fermer Explicite -->
-                        <button class="modal-btn cancel" onclick="document.getElementById('modal-add-patient').classList.add('hidden')" style="margin-top: auto; margin-bottom: 0;">Fermer</button>
-                    </div>
-                </div>
+            <button class="logout-btn" onclick="logout()" title="Déconnexion">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+        </div>
+        <div class="header-stats">
+            <div class="stat-chip">
+                <i class="fa-solid fa-users"></i>
+                <span id="patient-count">… patients</span>
             </div>
-            
+            <div class="stat-chip">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Actif</span>
+            </div>
         </div>
     </div>
 
-    <script>
-        function logout() {
-            if(window.MonacoCare) {
-                window.MonacoCare.clearSession();
-            } else {
-                localStorage.removeItem('mc_session');
-            }
-            window.location.href = 'login.html';
+    <div class="search-wrapper">
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-input" placeholder="Rechercher un patient…" oninput="filterPatients(this.value)">
+        </div>
+    </div>
+
+    <div class="content" id="content-area">
+        <div class="spinner-wrap"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    </div>
+
+    <div class="home-indicator"></div>
+</div>
+
+<script>
+    // ── Patients démo toujours présents (base sûre) ──────────────
+    const DEMO_PATIENTS = [
+        { patientId: 'patient-demo',    name: 'Jean-Pierre DUBOIS', age: 78, address: '12 Avenue de la Costa, Monaco' },
+        { patientId: 'patient-demo',    name: 'Charles LECLERC',    age: 27, address: 'Monaco',
+          _displayId: 'patient-leclerc' }   // label visuel distinct, data partagée
+    ];
+
+    let allPatients = [];
+
+    function logout() {
+        MonacoCare.clearSession();
+        window.location.href = 'login.html';
+    }
+
+    function selectPatient(patientId, patientName) {
+        MonacoCare.switchPatient(patientId, patientName);
+    }
+
+    function patientCard(p) {
+        const initials = (p.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        const subtitle = [p.age ? p.age + ' ans' : '', p.address || ''].filter(Boolean).join(' · ');
+        return `
+        <div class="patient-card" onclick="selectPatient('${p.patientId}', '${(p.name||'').replace(/'/g,"\\'")}')">
+            <div class="avatar-circle">${initials}</div>
+            <div class="patient-info">
+                <div class="patient-name">${p.name}</div>
+                <div class="patient-meta">${subtitle}</div>
+            </div>
+            <i class="fa-solid fa-chevron-right card-arrow"></i>
+        </div>`;
+    }
+
+    function renderList(patients) {
+        const area = document.getElementById('content-area');
+        if (!patients.length) {
+            area.innerHTML = `<div style="text-align:center; padding:40px 20px; color:#9CA3AF;">
+                <i class="fa-solid fa-user-slash" style="font-size:32px; margin-bottom:12px; display:block;"></i>
+                <p style="font-weight:600;">Aucun patient trouvé</p>
+            </div>
+            <button class="add-btn" onclick="openAddModal()">
+                <i class="fa-solid fa-plus"></i> Lier un nouveau patient
+            </button>`;
+            return;
         }
+        area.innerHTML = `
+            <p class="section-label">${patients.length} patient${patients.length > 1 ? 's' : ''} suivi${patients.length > 1 ? 's' : ''}</p>
+            ${patients.map(patientCard).join('')}
+            <button class="add-btn" onclick="openAddModal()">
+                <i class="fa-solid fa-plus"></i> Lier un nouveau patient
+            </button>`;
+        document.getElementById('patient-count').textContent = patients.length + ' patient' + (patients.length > 1 ? 's' : '');
+    }
 
-        function acceptInvitation() {
-            const name = document.getElementById('invitation-code').value;
-            if(!name) { alert('Veuillez entrer un code de bénéficiaire.'); return; }
-            alert('Demande d\'accès envoyée au dossier ' + name + ' avec succès.');
-            document.getElementById('modal-add-patient').classList.add('hidden');
-            
-            // Fake persistence
-            let customPatients = JSON.parse(localStorage.getItem('mc_custom_patients') || '[]');
-            const newId = name;
-            // Add identifying info so it's visible on list
-            customPatients.push({ id: newId, name: 'Patient ' + name });
-            localStorage.setItem('mc_custom_patients', JSON.stringify(customPatients));
-            
-            document.getElementById('invitation-code').value = ''; // Reset
-            loadPatients();
-        }
+    function filterPatients(query) {
+        const q = query.toLowerCase().trim();
+        renderList(q ? allPatients.filter(p => p.name.toLowerCase().includes(q)) : allPatients);
+    }
 
-        function selectPatient(patientId, patientName) {
-            MonacoCare.switchPatient(patientId, patientName);
-        }
+    async function loadPatients() {
+        try {
+            const session = MonacoCare.getSession();
+            const proId = session?.proId || null;
 
-        function patientCard(p) {
-            const initials = (p.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-            const subtitle = [p.age ? p.age + ' ans' : '', p.address || ''].filter(Boolean).join(' · ');
-            return `<div onclick="selectPatient('${p.patientId}', '${(p.name||'').replace(/'/g, "\\'")}')"
-                style="background:white; border-radius:14px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.06);
-                    display:flex; align-items:center; gap:14px; cursor:pointer; border:1px solid #E2E8F0;
-                    transition:box-shadow .2s, transform .15s;"
-                onmouseenter="this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'; this.style.transform='translateY(-1px)'"
-                onmouseleave="this.style.boxShadow='0 2px 10px rgba(0,0,0,0.06)'; this.style.transform=''">
-                <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#7B1535,#CE1126);
-                    display:flex; align-items:center; justify-content:center; flex-shrink:0; color:white; font-weight:700; font-size:15px;">
-                    ${initials}
-                </div>
-                <div style="flex:1; min-width:0;">
-                    <h4 style="font-size:15px; font-weight:700; margin-bottom:3px; color:#1A1A2E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</h4>
-                    <p style="font-size:12px; color:#6B7280;">${subtitle}</p>
-                </div>
-                <i class="fa-solid fa-chevron-right" style="color:#dcc0c3; flex-shrink:0;"></i>
-            </div>`;
-        }
+            // Base : les deux patients démo sont TOUJOURS présents
+            let patients = [...DEMO_PATIENTS];
 
-        async function loadPatients() {
-            const list = document.getElementById('patients-list');
-            list.innerHTML = '<div style="text-align:center; padding:30px; color:#6B7280;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
-
+            // Enrichir avec Firestore (sans bloquer si ça échoue)
             try {
-                const session = MonacoCare.getSession();
-                const proId = session ? session.proId : null;
-
                 let snap;
                 if (proId) {
                     snap = await db.collection('patients')
@@ -150,52 +399,52 @@
                     snap = await db.collection('patients').get();
                 }
 
-                let patients = snap.docs.map(d => d.data());
-
-                // Fallback si Firestore vide
-                if (!patients.length) {
-                    patients = [
-                        { patientId: 'patient-demo', name: 'Jean-Pierre DUBOIS', age: 78, address: '12 Avenue de la Costa, Monaco' },
-                        { patientId: 'patient-leclerc', name: 'Charles LECLERC', age: 27, address: 'Monaco' }
-                    ];
+                if (!snap.empty) {
+                    const firestoreIds = new Set(snap.docs.map(d => d.id));
+                    // Ajouter les patients Firestore qui ne sont pas déjà dans la liste démo
+                    const DEMO_IDS = new Set(DEMO_PATIENTS.map(p => p.patientId));
+                    snap.docs.forEach(doc => {
+                        if (!DEMO_IDS.has(doc.id)) {
+                            patients.push(doc.data());
+                        }
+                    });
                 }
-
-                list.innerHTML = patients.map(patientCard).join('');
-
-            } catch(e) {
-                console.error('loadPatients:', e);
-                // Fallback en cas d'erreur Firestore
-                list.innerHTML = patientCard({
-                    patientId: 'patient-demo',
-                    name: 'Jean-Pierre DUBOIS',
-                    age: 78,
-                    address: '12 Avenue de la Costa, Monaco'
-                });
+            } catch(firestoreErr) {
+                console.warn('Firestore unavailable, using demo list:', firestoreErr);
             }
 
-            // Masquer la fausse notification de démo
-            const notif = document.getElementById('pending-patient-requests');
-            if (notif) notif.style.display = 'none';
+            allPatients = patients;
+            renderList(patients);
+
+        } catch(e) {
+            console.error('loadPatients fatal:', e);
+            allPatients = [...DEMO_PATIENTS];
+            renderList(allPatients);
+        }
+    }
+
+    function openAddModal() {
+        alert('Fonctionnalité de liaison patient disponible dans la version complète.');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const session = MonacoCare.getSession();
+        if (!session) { window.location.href = 'login.html'; return; }
+
+        // Famille → direct vers l'app
+        if (session.role === 'family' || session.role === 'particulier') {
+            window.location.href = 'index.html'; return;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const session = MonacoCare.getSession();
-            if (!session) {
-                window.location.href = 'login.html';
-                return;
-            }
+        const nameEl = document.getElementById('pro-name-display');
+        if (nameEl) {
+            const n = session.displayName || session.proId || 'Professionnel';
+            // Afficher juste le prénom si le nom contient " — "
+            nameEl.textContent = n.includes(' — ') ? n.split(' — ')[0] : n;
+        }
 
-            // Famille → pas de liste de patients, direct vers l'app
-            if (session.role === 'family' || session.role === 'particulier') {
-                window.location.href = 'index.html';
-                return;
-            }
-
-            const nameEl = document.getElementById('pro-name-display');
-            if (nameEl) nameEl.textContent = session.displayName || session.proId || 'Professionnel';
-
-            loadPatients();
-        });
-    </script>
+        loadPatients();
+    });
+</script>
 </body>
 </html>

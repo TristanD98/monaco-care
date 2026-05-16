@@ -104,14 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Charger les raccourcis depuis Firebase (async, met à jour l'UI si différent)
     async function loadShortcutsFromFirebase() {
         const docId = getShortcutsDocId();
+        if (docId === 'demo-user') return; // pas de sauvegarde Firebase en mode démo sans session
         try {
             const doc = await db.collection('user_shortcuts').doc(docId).get();
             if (doc.exists) {
+                // Firebase a des données → les charger
                 const data = doc.data();
-                // Fusionner avec les rôles par défaut manquants
                 window.customShortcuts = Object.assign({}, DEFAULT_SHORTCUTS, data);
                 localStorage.setItem('mc_custom_shortcuts', JSON.stringify(window.customShortcuts));
-                updateRoleUI(); // Rafraîchir les boutons avec les raccourcis Firebase
+                updateRoleUI();
+            } else {
+                // Première connexion avec cet ID → sauvegarder les raccourcis actuels dans Firebase
+                // pour qu'ils survivent à un effacement du localStorage
+                await db.collection('user_shortcuts').doc(docId).set(window.customShortcuts);
             }
         } catch(e) {
             console.warn('Impossible de charger les raccourcis depuis Firebase:', e);
@@ -417,13 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const d = doc.data();
                                 const div = document.createElement('div');
                                 div.style = "background: white; border-radius:12px; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); margin-bottom:10px;";
-                                
                                 let timeDisplay = "";
                                 if(d.createdAt) {
                                     const dateObj = d.createdAt.toDate();
                                     timeDisplay = dateObj.toLocaleDateString() + ' ' + dateObj.getHours().toString().padStart(2,'0') + ':' + dateObj.getMinutes().toString().padStart(2,'0');
                                 }
-
                                 div.innerHTML = `
                                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                                         <b style="font-size:13px;">${d.authorName}</b>
@@ -434,6 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 notesGrid.appendChild(div);
                             });
                         }
+                    }, err => {
+                        // Index Firestore manquant ou erreur réseau → message clair
+                        console.warn('Notes cliniques non disponibles:', err);
+                        notesGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:24px; margin-bottom:8px; display:block; color:#F59E0B;"></i>
+                            Notes temporairement indisponibles.
+                        </div>`;
                     });
                 vaultListeners.push(unsubNotes);
             }
