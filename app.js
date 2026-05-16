@@ -604,9 +604,12 @@ document.addEventListener('DOMContentLoaded', () => {
                              else timeDisplay = d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }) + ' · ' + timeStr;
                          }
 
+                        const imgHTML = data.imageUrl
+                            ? `<img src="${data.imageUrl}" alt="Photo" style="max-width:200px; border-radius:10px; display:block; margin-top:6px; cursor:pointer;" onclick="window.open(this.src,'_blank')">`
+                            : '';
                         msgDiv.innerHTML = `
                             <div class="sender-info">${data.senderName} — ${timeDisplay}</div>
-                            <div class="bubble">${data.text}</div>
+                            <div class="bubble">${data.text}${imgHTML}</div>
                         `;
                         chatMessages.appendChild(msgDiv);
                     });
@@ -636,8 +639,64 @@ document.addEventListener('DOMContentLoaded', () => {
         chatListView.classList.add('active');
     });
     if (attachBtn) attachBtn.addEventListener('click', () => attachMenu && attachMenu.classList.toggle('hidden'));
+
+    // Bouton "Appareil Photo" dans le menu pièce jointe du chat
+    const chatPhotoBtn = document.querySelector('.attach-item');
+    if (chatPhotoBtn) {
+        const chatFileInput = document.createElement('input');
+        chatFileInput.type = 'file';
+        chatFileInput.accept = 'image/*';
+        chatFileInput.capture = 'environment'; // ouvre la caméra sur mobile
+        chatFileInput.style.display = 'none';
+        document.body.appendChild(chatFileInput);
+
+        chatPhotoBtn.addEventListener('click', () => {
+            if (attachMenu) attachMenu.classList.add('hidden');
+            chatFileInput.click();
+        });
+
+        chatFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const origIcon = chatPhotoBtn.innerHTML;
+            chatPhotoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Envoi...';
+            chatPhotoBtn.disabled = true;
+
+            try {
+                const patientId = MonacoCare.getSession()?.patientId || 'patient-demo';
+                const fileName = `chat/${patientId}/${Date.now()}_${file.name}`;
+                const ref = storage.ref().child(fileName);
+                await ref.put(file);
+                const imageUrl = await ref.getDownloadURL();
+
+                const meId = roleSelect.value;
+                const meName = roleSelect.options[roleSelect.selectedIndex].text.split(' (')[0];
+                const roomId = "chat_" + patientId + "_" + (currentContactId || "unknown");
+
+                await db.collection('chat_messages').add({
+                    roomId, patientId,
+                    participants: [meId, currentContactId],
+                    senderId: meId,
+                    senderName: meName,
+                    text: '📷 Photo',
+                    imageUrl: imageUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch(err) {
+                console.error('Erreur upload photo chat:', err);
+                alert('Impossible d\'envoyer la photo. Vérifiez les règles Firebase Storage.');
+            } finally {
+                chatPhotoBtn.innerHTML = origIcon;
+                chatPhotoBtn.disabled = false;
+                chatFileInput.value = '';
+            }
+        });
+    }
+
     document.querySelectorAll('.attach-item').forEach(item => {
-        item.addEventListener('click', () => attachMenu && attachMenu.classList.add('hidden'));
+        // fermer le menu au clic sur n'importe quel item (sauf le photo déjà géré ci-dessus)
+        if (item !== chatPhotoBtn) item.addEventListener('click', () => attachMenu && attachMenu.classList.add('hidden'));
     });
 
     /* --- SEND IN CHAT ROOM --- */
