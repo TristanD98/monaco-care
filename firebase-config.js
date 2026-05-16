@@ -101,8 +101,6 @@ const MonacoCare = (() => {
             'PRO-001': { pin: 'CARE2026', name: 'Tristan — Kinésithérapeute', specialty: 'Kinésithérapeute' },
             'PRO-002': { pin: 'CARE2026', name: 'Dr. Sarah Martin', specialty: 'Médecin généraliste' },
             'PRO-003': { pin: 'CARE2026', name: 'Sophie Laurent', specialty: 'Auxiliaire de vie' },
-            'INT-001': { pin: 'CARE2026', name: 'Leïla', specialty: 'helper' },
-            'INT-002': { pin: 'CARE2026', name: 'Max', specialty: 'helper' },
         };
         const proUpper = proId.toUpperCase().trim();
         if (DEMO_PROS[proUpper] && pin === DEMO_PROS[proUpper].pin) {
@@ -114,7 +112,7 @@ const MonacoCare = (() => {
             const email = `${proId.toLowerCase().trim()}@monacocare.mc`;
             await auth.setPersistence(remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
             await auth.signInWithEmailAndPassword(email, pin);
-            
+
             const docRef = db.collection('professionals').doc(proUpper);
             const docSnap = await docRef.get();
             if(!docSnap.exists) {
@@ -136,9 +134,9 @@ const MonacoCare = (() => {
         } catch(error) {
             console.error("Login error", error);
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                 return { success: false, message: 'Identifiant (Ex: PRO-001) ou code d\'accès incorrect. En démo : PRO-001 / 1234' };
+                 return { success: false, message: 'Identifiant (Ex: PRO-001) ou code d\'accès incorrect.' };
             }
-            return { success: false, message: "Erreur de connexion. Essayez PRO-001 / 1234 pour la démo." };
+            return { success: false, message: "Erreur de connexion. Essayez PRO-001 / CARE2026 pour la démo." };
         }
     }
 
@@ -179,26 +177,56 @@ const MonacoCare = (() => {
         }
     }
 
-    // ── ACCOMPAGNANT ────────────────────────────────────
+    // ── INTERVENANT ─────────────────────────────────────
     async function loginHelper(helperId, pin, remember) {
-        return await loginProfessional(helperId, pin, remember);
+        // ── MODE DÉMO LOCAL ──
+        const DEMO_INTERVENANTS = {
+            'INT-001': { pin: 'CARE2026', name: 'Leïla', professionLabel: 'Femme de ménage' },
+            'INT-002': { pin: 'CARE2026', name: 'Max',   professionLabel: 'Auxiliaire de vie' },
+        };
+        const intUpper = helperId.toUpperCase().trim();
+        if (DEMO_INTERVENANTS[intUpper] && pin === DEMO_INTERVENANTS[intUpper].pin) {
+            const i = DEMO_INTERVENANTS[intUpper];
+            return { success: true, displayName: i.name, specialty: i.professionLabel, email: `${helperId.toLowerCase()}@monacocare.mc` };
+        }
+
+        try {
+            const docRef = db.collection('intervenants').doc(intUpper);
+            const docSnap = await docRef.get();
+            if (!docSnap.exists) {
+                return { success: false, message: 'Identifiant (Ex: INT-001) ou code d\'accès incorrect.' };
+            }
+            const intData = docSnap.data();
+            if (intData.pin !== pin) {
+                return { success: false, message: 'Code d\'accès incorrect.' };
+            }
+            if (intData.status === 'pending') {
+                return { success: false, message: 'Votre compte est en attente de validation.' };
+            }
+            if (intData.status === 'suspended') {
+                return { success: false, message: 'Votre compte a été suspendu.' };
+            }
+            await docRef.update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() });
+            return { success: true, displayName: intData.name, specialty: intData.professionLabel || 'Intervenant', email: intData.email };
+        } catch(error) {
+            console.error("Login helper error", error);
+            return { success: false, message: 'Erreur de connexion. Essayez INT-001 / CARE2026 pour la démo.' };
+        }
     }
 
     async function registerHelper({ firstName, lastName, profession, phone }) {
         try {
-            const id = 'REG-ACC-' + Date.now();
+            const id = 'REG-INT-' + Date.now();
             const name = (firstName + ' ' + lastName).trim();
-            const email = `helper_${Date.now()}@monacocare.mc`; 
-            
-            await db.collection('pending_registrations').doc(id).set({
-                id, firstName, lastName, name, 
-                professionLabel: 'Accompagnant - ' + profession, 
-                phone, email, status: 'pending', role: 'helper',
+            await db.collection('pending_intervenants').doc(id).set({
+                id, firstName, lastName, name,
+                professionLabel: profession,
+                phone, status: 'pending', role: 'helper',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             return { success: true, registrationId: id };
         } catch(e) {
-            return { success: false, message: "Erreur lors de l'envoi de la formulation. " + e.message };
+            return { success: false, message: "Erreur lors de l'envoi de la demande. " + e.message };
         }
     }
 
@@ -341,6 +369,8 @@ const MonacoCare = (() => {
                 { id: 'PRO-003', name: 'Sophie Laurent', firstName: 'Sophie', lastName: 'Laurent', specialty: 'auxiliaire',
                   professionLabel: 'Auxiliaire de vie', email: 'pro-003@monacocare.mc', pin: 'CARE2026',
                   status: 'active', color: '#3B82F6', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
+            ];
+            const DEMO_INTERVENANTS_FULL = [
                 { id: 'INT-001', name: 'Leïla', firstName: 'Leïla', lastName: '', specialty: 'helper',
                   professionLabel: 'Femme de ménage', email: 'int-001@monacocare.mc', pin: 'CARE2026',
                   status: 'active', color: '#6366F1', createdAt: firebase.firestore.FieldValue.serverTimestamp() },
@@ -350,6 +380,9 @@ const MonacoCare = (() => {
             ];
             DEMO_PROS_FULL.forEach(({ id, ...data }) => {
                 batch.set(db.collection('professionals').doc(id), data, { merge: true });
+            });
+            DEMO_INTERVENANTS_FULL.forEach(({ id, ...data }) => {
+                batch.set(db.collection('intervenants').doc(id), data, { merge: true });
             });
             // Patient unique de démo : Charles LECLERC
             // On force le remplacement complet (pas merge) pour écraser Jean-Pierre si présent
@@ -369,12 +402,6 @@ const MonacoCare = (() => {
             if(snap.empty) {
                 console.log("Initialisation des données de base Firebase...");
                 const batch2 = db.batch();
-                batch2.set(db.collection('patients').doc('patient-demo'), {
-                    name: 'Jean-Pierre DUBOIS', patientId: 'patient-demo', firstName: 'Jean-Pierre',
-                    lastName: 'DUBOIS', dateOfBirth: '1947-03-12', address: '12 Avenue de la Costa, Monaco',
-                    age: 78, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003'], assignedFamilyCodes: ['DEMO-2026'],
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
                 batch2.set(db.collection('demo_codes').doc('DEMO-2026'), {
                     active: true, patientId: 'patient-demo', label: 'Famille (Code DEMO-2026)',
                     name: 'Emma Dubois', role: 'Famille — Fille',

@@ -5,6 +5,22 @@
 > **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
 ---
 
+### 16 Mai 2026 à 19:30 — Séparation collections Firestore : professionals / intervenants / famille
+- **Objectif :** Créer trois collections distinctes dans Firestore, une par type d'utilisateur.
+- **Modifications (`firebase-config.js`) :**
+  1. Seed : `DEMO_PROS_FULL` ne contient plus que PRO-001/002/003 → collection `professionals`
+  2. Seed : nouvelle `DEMO_INTERVENANTS_FULL` (INT-001/002) → collection `intervenants`
+  3. `loginHelper` : entièrement réécrite — dictionnaire local `DEMO_INTERVENANTS` + requête Firestore `intervenants` (ne délègue plus à `loginProfessional`)
+  4. `registerHelper` : écrit dans `pending_intervenants` (avant : `pending_registrations`)
+  5. Second batch seed : suppression du `batch2.set(patient-demo, Jean-Pierre DUBOIS)` qui écrasait Charles LECLERC si `demo_codes` était vide
+  6. Message d'erreur `loginProfessional` : corrigé (affichait encore "1234", remplacé par "CARE2026")
+- **Collections Firestore après cette mise à jour :**
+  - `professionals` : PRO-001, PRO-002, PRO-003 (professionnels de santé)
+  - `intervenants` : INT-001, INT-002 (aides à domicile, accompagnants)
+  - `demo_codes` : codes d'accès Famille
+  - `pending_intervenants` : demandes d'inscription intervenants
+  - `pending_registrations` : demandes d'inscription professionnels de santé
+
 ### 16 Mai 2026 à 18:59 — HOTFIX : Intervenants absents Firestore + PIN incohérent
 - **Problèmes :**
   1. INT-001 (Leïla) et INT-002 (Max) absents de la collection `professionals` dans Firestore → connexion impossible
