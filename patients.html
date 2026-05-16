@@ -405,16 +405,16 @@
                 }
 
                 if (snap && !snap.empty) {
-                    // Remplacer la liste démo par les données Firestore réelles
-                    const DEMO_IDS = new Set(DEMO_PATIENTS.map(p => p.patientId));
-                    const firestorePatients = snap.docs.map(d => d.data());
+                    const firestorePatients = snap.docs.map(d => d.data())
+                        // Ignorer patient-leclerc (doublon supprimé, données sous patient-demo)
+                        .filter(p => p.patientId !== 'patient-leclerc');
 
-                    // Mettre à jour les patients démo avec les données Firestore, ajouter les autres
-                    patients = firestorePatients;
-
-                    // S'assurer que Charles LECLERC apparaît toujours même si Firestore le rate
-                    const hasDemo = firestorePatients.some(p => p.patientId === 'patient-demo');
-                    if (!hasDemo) patients = [...DEMO_PATIENTS, ...firestorePatients];
+                    if (firestorePatients.length > 0) {
+                        patients = firestorePatients;
+                    }
+                    // S'assurer que Charles LECLERC est toujours dans la liste
+                    const hasDemo = patients.some(p => p.patientId === 'patient-demo');
+                    if (!hasDemo) patients = [...DEMO_PATIENTS, ...patients];
                 }
             } catch(firestoreErr) {
                 console.warn('Firestore unavailable, using demo list:', firestoreErr);

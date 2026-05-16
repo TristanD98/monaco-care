@@ -346,12 +346,16 @@ const MonacoCare = (() => {
                 batch.set(db.collection('professionals').doc(id), data, { merge: true });
             });
             // Patient unique de démo : Charles LECLERC
+            // On force le remplacement complet (pas merge) pour écraser Jean-Pierre si présent
             batch.set(db.collection('patients').doc('patient-demo'), {
                 name: 'Charles LECLERC', patientId: 'patient-demo', firstName: 'Charles',
                 lastName: 'LECLERC', dateOfBirth: '1997-10-16', address: 'Monaco',
                 age: 27, assignedPros: ['PRO-001', 'PRO-002', 'PRO-003', 'INT-001', 'INT-002'],
-                assignedFamilyCodes: ['DEMO-2026', 'FAM-001', 'FAM-002']
-            }, { merge: true });
+                assignedFamilyCodes: ['DEMO-2026', 'FAM-001', 'FAM-002'],
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }); // sans merge: true → écrase tout
+            // Supprimer l'ancien doublon patient-leclerc s'il existe encore
+            batch.delete(db.collection('patients').doc('patient-leclerc'));
             await batch.commit();
 
             // Créer le reste uniquement si la DB est vierge (premier lancement)

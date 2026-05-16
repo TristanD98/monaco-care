@@ -409,7 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 notesGrid.innerHTML = '<div style="text-align:center;color:gray;">Chargement...</div>';
                 const unsubNotes = db.collection('medical_notes')
                     .where('patientId', '==', patientId)
-                    .orderBy('createdAt', 'desc')
                     .onSnapshot(snap => {
                         if(snap.empty) {
                             notesGrid.innerHTML = `<div style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:13px;">
@@ -417,8 +416,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 Aucune note clinique pour le moment.
                             </div>`;
                         } else {
+                            // Trier en JS (pas besoin d'index Firestore composite)
+                            const noteDocs = [];
+                            snap.forEach(doc => noteDocs.push(doc));
+                            noteDocs.sort((a,b) => (b.data().createdAt?.seconds||0) - (a.data().createdAt?.seconds||0));
+
                             notesGrid.innerHTML = '';
-                            snap.forEach(doc => {
+                            noteDocs.forEach(doc => {
                                 const d = doc.data();
                                 const div = document.createElement('div');
                                 div.style = "background: white; border-radius:12px; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); margin-bottom:10px;";
