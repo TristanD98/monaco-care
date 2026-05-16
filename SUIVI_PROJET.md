@@ -5,7 +5,7 @@
 > **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
 ---
 
-### 16 Mai 2026 à 22:00 — HOTFIX : Intervenants absents Firestore + PIN incohérent
+### 16 Mai 2026 à 18:59 — HOTFIX : Intervenants absents Firestore + PIN incohérent
 - **Problèmes :**
   1. INT-001 (Leïla) et INT-002 (Max) absents de la collection `professionals` dans Firestore → connexion impossible
   2. Le seed Firestore utilisait PIN `1234` pour les pros, le dictionnaire local utilisait `CARE2026` → incohérence
@@ -14,7 +14,7 @@
   2. Tous les PINs du seed unifiés à `CARE2026`
 - **PIN unique pour tous les comptes : `CARE2026`**
 
-### 16 Mai 2026 à 21:30 — INCIDENT : Firestore règles expirées — tout le flux bloqué
+### 16 Mai 2026 à 18:36 — INCIDENT : Firestore règles expirées — tout le flux bloqué
 - **Symptômes signalés :**
   - "Impossible de charger le flux" sur l'écran d'accueil
   - "Erreur réseau : impossible de poster" sur tous les messages (flux et enregistrements rapides)
@@ -83,7 +83,7 @@
      - Mise à jour d'urgence des règles de sécurité de Firebase Firestore pour rétablir les requêtes clients en mode test.
 - **Décision Importante :** Le renommage complet du projet et des dossiers de "Monaco Care" vers "Monacare" est reporté à plus tard afin de ne pas casser les liaisons actuelles avec Firebase et Vercel.
 
-### 16 Mai 2026 à 21:00 — HOTFIX : Flux vide + erreur envoi message Famille
+### 16 Mai 2026 à 18:16 — HOTFIX : Flux vide + erreur envoi message Famille
 - **Problèmes :**
   1. Historique du flux toujours vide : `loadRealtimeFeed` utilisait `orderBy('createdAt', 'desc')` qui nécessite un index composite Firestore inexistant → listener silencieusement mort
   2. Erreur "réseau impossible de poster" pour la Famille : `publishToFeed` lisait `authorName`/`authorRole` depuis le widget roleSelect (démo) au lieu de la session réelle
@@ -91,7 +91,7 @@
   1. `app.js` : `orderBy` supprimé du flux, tri effectué en JS après réception du snapshot
   2. `app.js` : `publishToFeed` utilise `session.displayName` et `session.role` en priorité (fallback roleSelect en mode démo sans session)
 
-### 16 Mai 2026 à 20:15 — HOTFIX : Firestore incohérent — doublon patient, notes cliniques bloquées
+### 16 Mai 2026 à 18:08 — HOTFIX : Firestore incohérent — doublon patient, notes cliniques bloquées
 - **Problèmes identifiés via captures Firestore :**
   1. `patient-leclerc` existait encore dans Firestore → la requête retournait deux patients, et cliquer sur "Charles LECLERC" pointait vers un dossier vide (toutes les données étaient sous `patient-demo`)
   2. `patient-demo` avait encore les données de Jean-Pierre DUBOIS (seed précédent en `merge:true` n'écrasait pas les vieux champs)
@@ -101,7 +101,7 @@
   2. `app.js` : tri des notes cliniques en JS après le snapshot, suppression du `orderBy` Firestore
   3. `patients.html` : filtre `patient-leclerc` des résultats pour éviter l'affichage du doublon pendant la transition
 
-### 16 Mai 2026 à 18:30 — Refonte navigation multi-rôles & unification patient Charles LECLERC
+### 16 Mai 2026 à 17:53 — Refonte navigation multi-rôles & unification patient Charles LECLERC
 - **Ce que l'on cherchait à accomplir :**
   - Supprimer définitivement Jean-Pierre DUBOIS (patient fictif de test) et n'avoir qu'un seul patient de démo : **Charles LECLERC** (ID `patient-demo` conservé pour ne pas perdre l'historique des messages/constantes)
   - Faire passer la **Famille par la page de sélection patient** (comme les Pros et Intervenants) au lieu d'atterrir directement sur le flux
