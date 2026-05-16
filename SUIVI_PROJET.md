@@ -1,6 +1,22 @@
 # Conducteur de Projet — Monaco Care
 *Historique de suivi des développements et évolutions de l'application.*
 
+---
+> **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
+---
+
+### 16 Mai 2026 à 21:30 — INCIDENT : Firestore règles expirées — tout le flux bloqué
+- **Symptômes signalés :**
+  - "Impossible de charger le flux" sur l'écran d'accueil
+  - "Erreur réseau : impossible de poster" sur tous les messages (flux et enregistrements rapides)
+  - Touche tous les rôles (Pro, Famille, Intervenant)
+- **Cause racine :**
+  Les règles Firebase Firestore en mode test expirent automatiquement après 30 jours. La date d'expiration était dépassée → Firebase refusait toute lecture ET écriture avec une erreur de permission.
+  Le message "Impossible de charger le flux" était visible grâce au handler d'erreur ajouté la veille — avant, l'erreur était silencieuse.
+- **Correction :**
+  Action manuelle dans Firebase Console → Firestore → Règles : republier `allow read, write: if true` sans date d'expiration.
+- **Aucune modification de code requise.** Le code est correct.
+
 ### 23 Avril 2026 à 19:25 — SPRINT 2 : Phase 1 (Le Flux d'Actualité)
 - **Ce que l'on cherchait à accomplir :** 
   Faire en sorte que le panneau central de l'application (le fameux "Flux", là où tout le monde poste des nouvelles du patient) arrête d'être une simple démo vide. Il fallait que les messages s'enregistrent pour de vrai sur Internet dans notre coffre-fort de données sécurisé (Google Firebase).
