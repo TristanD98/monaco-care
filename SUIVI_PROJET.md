@@ -5,7 +5,7 @@
 > **Règle de suivi (ajoutée le 16 mai 2026) :** Chaque modification de code doit être consignée ici immédiatement avec date et heure, avant le commit.
 ---
 
-### 16 Mai 2026 à 19:30 — Séparation collections Firestore : professionals / intervenants / famille
+### 16 Mai 2026 à 19:18 — Séparation collections Firestore : professionals / intervenants / famille
 - **Objectif :** Créer trois collections distinctes dans Firestore, une par type d'utilisateur.
 - **Modifications (`firebase-config.js`) :**
   1. Seed : `DEMO_PROS_FULL` ne contient plus que PRO-001/002/003 → collection `professionals`
