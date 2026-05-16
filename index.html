@@ -448,7 +448,7 @@
             const roleSelect = document.getElementById('role-select');
             if (roleSelect && session.role) {
                 const map = { medecin:'medecin', kine:'kine', auxiliaire:'auxiliaire',
-                    infirmier:'auxiliaire', family:'family', pro:'kine' };
+                    infirmier:'auxiliaire', family:'family', pro:'kine', helper:'auxiliaire' };
                 const val = map[session.role] || 'kine';
                 roleSelect.value = val;
                 roleSelect.dispatchEvent(new Event('change'));

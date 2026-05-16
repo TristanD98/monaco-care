@@ -172,7 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const menuBtn = document.getElementById('header-menu-btn');
         if(role === 'auxiliaire') {
             medicalPosts.forEach(post => post.style.display = 'none');
-            bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale / Famille Nécessaire.";
+            // Distinguer intervenant (helper) et auxiliaire de vie pro
+            const sess = MonacoCare.getSession();
+            if (sess && sess.role === 'helper') {
+                bioOverlay.querySelector('p').innerText = "Accès limité. Entrez votre code d'accès ci-dessous pour ouvrir le coffre médical.";
+            } else {
+                bioOverlay.querySelector('p').innerText = "Accès Refusé. Autorisation Médicale / Famille Nécessaire.";
+            }
             simulateBioBtn.style.display = 'none';
         } else if (role === 'family') {
             medicalPosts.forEach(post => post.style.display = 'flex');
@@ -207,12 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
             bioOverlay.classList.add('hidden');
             vaultContent.classList.remove('hidden');
             vaultUnlocked = true;
-            
-            // Accès complet (soignant)
+
+            // Famille : accès coffre (constantes + douleur) mais pas les notes cliniques
+            const isFamily = roleSelect.value === 'family';
+            const showClinical = !isFamily;
             const clinSection = vaultContent.querySelector('#clinical-notes-container')?.closest('.vault-section');
-            if(clinSection) clinSection.style.display = 'block';
-            
-            loadRealtimeVault(MonacoCare.getSession()?.patientId || 'patient-demo', true);
+            if(clinSection) clinSection.style.display = showClinical ? 'block' : 'none';
+
+            loadRealtimeVault(MonacoCare.getSession()?.patientId || 'patient-demo', showClinical);
         }, 1200);
     });
 
@@ -490,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Loop family
             for (const code of familles) {
-                const fSnap = await db.collection('demo_codes').doc(code).get();
+                const fSnap = await db.collection('family_codes').doc(code).get();
                 if (fSnap.exists && fSnap.data().active) {
                     const fData = fSnap.data();
                     team.push({

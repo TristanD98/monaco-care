@@ -77,7 +77,7 @@ const MonacoCare = (() => {
         }
 
         try {
-            const docRef = db.collection('demo_codes').doc(code);
+            const docRef = db.collection('family_codes').doc(code);
             const docSnap = await docRef.get();
             if (!docSnap.exists) return { valid: false, message: 'Code introuvable. Vérifiez votre saisie.' };
             
@@ -238,7 +238,7 @@ const MonacoCare = (() => {
                          Array.from({length:4}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
             const days = parseInt(options.days) || 30;
 
-            await db.collection('demo_codes').doc(code).set({
+            await db.collection('family_codes').doc(code).set({
                 active: true,
                 patientId: options.patientId || 'patient-demo',
                 label: options.label || 'Nouveau code',
@@ -248,7 +248,7 @@ const MonacoCare = (() => {
             return code;
         },
         async toggleDemoCode(code) {
-            const docRef = db.collection('demo_codes').doc(code);
+            const docRef = db.collection('family_codes').doc(code);
             const docSnap = await docRef.get();
             if (docSnap.exists) {
                 const newStatus = !docSnap.data().active;
@@ -258,7 +258,7 @@ const MonacoCare = (() => {
             return false;
         },
         async deleteDemoCode(code) {
-            await db.collection('demo_codes').doc(code).delete();
+            await db.collection('family_codes').doc(code).delete();
         },
         async approveProfessional(regId) {
             const regRef = db.collection('pending_registrations').doc(regId);
@@ -305,7 +305,7 @@ const MonacoCare = (() => {
             return pin;
         },
         async getAllCodes() { 
-            const snap = await db.collection('demo_codes').get();
+            const snap = await db.collection('family_codes').get();
             const res = {}; snap.forEach(d => res[d.id] = d.data()); return res;
         },
         async getAllProfessionals() {
@@ -395,14 +395,17 @@ const MonacoCare = (() => {
             }); // sans merge: true → écrase tout
             // Supprimer l'ancien doublon patient-leclerc s'il existe encore
             batch.delete(db.collection('patients').doc('patient-leclerc'));
+            // Purger INT-001/002 de 'professionals' (migration vers collection 'intervenants')
+            batch.delete(db.collection('professionals').doc('INT-001'));
+            batch.delete(db.collection('professionals').doc('INT-002'));
             await batch.commit();
 
             // Créer le reste uniquement si la DB est vierge (premier lancement)
-            const snap = await db.collection('demo_codes').limit(1).get();
+            const snap = await db.collection('family_codes').limit(1).get();
             if(snap.empty) {
                 console.log("Initialisation des données de base Firebase...");
                 const batch2 = db.batch();
-                batch2.set(db.collection('demo_codes').doc('DEMO-2026'), {
+                batch2.set(db.collection('family_codes').doc('DEMO-2026'), {
                     active: true, patientId: 'patient-demo', label: 'Famille (Code DEMO-2026)',
                     name: 'Emma Dubois', role: 'Famille — Fille',
                     expiresAt: new Date(Date.now() + 365 * 864e5).toISOString()

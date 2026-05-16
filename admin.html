@@ -480,7 +480,7 @@
 
         // 1. Test de connectivité Firestore
         try {
-            await db.collection('demo_codes').limit(1).get();
+            await db.collection('family_codes').limit(1).get();
         } catch(e) {
             if (statusBox) statusBox.innerHTML = `
                 <div class="alert-box" style="background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.3); margin-bottom:16px;">
@@ -498,29 +498,29 @@
             const batch = db.batch();
             const demoPros = [
                 { id:'PRO-001', name:'Tristan', firstName:'Tristan', lastName:'', specialty:'kine',
-                  professionLabel:'Kinésithérapeute', email:'pro-001@monacocare.mc', pin:'1234', status:'active', color:'#7B1535' },
+                  professionLabel:'Kinésithérapeute', email:'pro-001@monacocare.mc', pin:'CARE2026', status:'active', color:'#7B1535' },
                 { id:'PRO-002', name:'Dr. Sarah Martin', firstName:'Sarah', lastName:'Martin', specialty:'medecin',
-                  professionLabel:'Médecin généraliste', email:'pro-002@monacocare.mc', pin:'1234', status:'active', color:'#315141' },
+                  professionLabel:'Médecin généraliste', email:'pro-002@monacocare.mc', pin:'CARE2026', status:'active', color:'#315141' },
                 { id:'PRO-003', name:'Sophie Laurent', firstName:'Sophie', lastName:'Laurent', specialty:'auxiliaire',
-                  professionLabel:'Auxiliaire de vie', email:'pro-003@monacocare.mc', pin:'1234', status:'active', color:'#3B82F6' },
+                  professionLabel:'Auxiliaire de vie', email:'pro-003@monacocare.mc', pin:'CARE2026', status:'active', color:'#3B82F6' },
             ];
             demoPros.forEach(({ id, ...data }) =>
                 batch.set(db.collection('professionals').doc(id), data, { merge: true })
             );
             const [patientSnap, codeSnap] = await Promise.all([
                 db.collection('patients').doc('patient-demo').get(),
-                db.collection('demo_codes').doc('DEMO-2026').get()
+                db.collection('family_codes').doc('DEMO-2026').get()
             ]);
             if (!patientSnap.exists) {
                 batch.set(db.collection('patients').doc('patient-demo'), {
-                    name:'Jean-Pierre DUBOIS', patientId:'patient-demo', firstName:'Jean-Pierre', lastName:'DUBOIS',
-                    dateOfBirth:'1947-03-12', address:'12 Avenue de la Costa, Monaco', age:78,
-                    assignedPros:['PRO-001','PRO-002','PRO-003'], assignedFamilyCodes:['DEMO-2026'],
+                    name:'Charles LECLERC', patientId:'patient-demo', firstName:'Charles', lastName:'LECLERC',
+                    dateOfBirth:'1997-10-16', address:'Monaco', age:27,
+                    assignedPros:['PRO-001','PRO-002','PRO-003','INT-001','INT-002'], assignedFamilyCodes:['DEMO-2026','FAM-001','FAM-002'],
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
             if (!codeSnap.exists) {
-                batch.set(db.collection('demo_codes').doc('DEMO-2026'), {
+                batch.set(db.collection('family_codes').doc('DEMO-2026'), {
                     active:true, patientId:'patient-demo', label:'Famille (Code DEMO-2026)',
                     name:'Emma Dubois', role:'Famille — Fille',
                     expiresAt: new Date(Date.now() + 365 * 864e5).toISOString()
