@@ -58,6 +58,14 @@
      - Mise à jour d'urgence des règles de sécurité de Firebase Firestore pour rétablir les requêtes clients en mode test.
 - **Décision Importante :** Le renommage complet du projet et des dossiers de "Monaco Care" vers "Monacare" est reporté à plus tard afin de ne pas casser les liaisons actuelles avec Firebase et Vercel.
 
+### 16 Mai 2026 à 21:00 — HOTFIX : Flux vide + erreur envoi message Famille
+- **Problèmes :**
+  1. Historique du flux toujours vide : `loadRealtimeFeed` utilisait `orderBy('createdAt', 'desc')` qui nécessite un index composite Firestore inexistant → listener silencieusement mort
+  2. Erreur "réseau impossible de poster" pour la Famille : `publishToFeed` lisait `authorName`/`authorRole` depuis le widget roleSelect (démo) au lieu de la session réelle
+- **Corrections :**
+  1. `app.js` : `orderBy` supprimé du flux, tri effectué en JS après réception du snapshot
+  2. `app.js` : `publishToFeed` utilise `session.displayName` et `session.role` en priorité (fallback roleSelect en mode démo sans session)
+
 ### 16 Mai 2026 à 20:15 — HOTFIX : Firestore incohérent — doublon patient, notes cliniques bloquées
 - **Problèmes identifiés via captures Firestore :**
   1. `patient-leclerc` existait encore dans Firestore → la requête retournait deux patients, et cliquer sur "Charles LECLERC" pointait vers un dossier vide (toutes les données étaient sous `patient-demo`)
